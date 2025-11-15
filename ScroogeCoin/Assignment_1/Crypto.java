@@ -1,5 +1,6 @@
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
+import java.security.PrivateKey;
 import java.security.PublicKey;
 import java.security.Signature;
 import java.security.SignatureException;
@@ -33,4 +34,16 @@ public class Crypto {
         return false;
 
     }
+
+    public static byte[] sign(PrivateKey privateKey, byte[] message) {
+        try {
+            Signature signer = Signature.getInstance("SHA256withRSA");
+            signer.initSign(privateKey);
+            signer.update(message);
+            return signer.sign();
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
 }
