@@ -4,7 +4,7 @@ public class TxHandler {
 
     private UTXOPool utxoPool;
     private List<Transaction> acceptedTxs;
-    private Map<byte[], Double> feeMap = new HashMap<>();
+    public Map<byte[], Double> feeMap = new HashMap<>();
     private Double fee;
 
 

@@ -1,4 +1,5 @@
 import java.lang.reflect.Array;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -6,33 +7,30 @@ import java.util.Map;
 public class Brute {
 
 
-    public static float[]  BruteF(UTXOPool pool, Transaction[] allTxs, TxHandler handler){
-        List<Object> pooltx = handler.getPool();
-        float[] Bigtx = new float[2]; // size is 2
-        Float F = 0.0F;
+    public static float[] BruteF(UTXOPool pool, Transaction[] allTxs, TxHandler handler) {
+        List<Transaction> accepted = handler.getAcceptedTxs();
+        float[] Bigtx = new float[2];
+        float F = 0.0f;
 
-        HashMap<Integer, Float> feesTx = new HashMap<Integer, Float>();
-        Integer i = 0;
-        for (Transaction tx : handler.getAcceptedTxs()){
-            float fee = (float) handler.getTxFee(tx);
-            feesTx.put(i, fee);
-            /*System.out.println("Tx"+i);
-            System.out.println(feesTx.get(i));*/
-            i++;
+        // Store fees in a List
+        List<Float> fees = new ArrayList<>();
+        for (Transaction tx : accepted) {
+            fees.add((float) handler.getTxFee(tx));
         }
 
-        for (i= 0; i < feesTx.size(); i++) {
-            for (int j = i + 1; j < feesTx.size(); j++) {
-                Float sum = feesTx.get(i)+feesTx.get(j);
-                if (sum > F){
+        for (int i = 0; i < fees.size(); i++) {
+            for (int j = i + 1; j < fees.size(); j++) {
+                float sum = fees.get(i) + fees.get(j);
+                if (sum > F) {
                     F = sum;
-                    Bigtx[0] = feesTx.get(i);
-                    Bigtx[1] = feesTx.get(j);
+                    Bigtx[0] = fees.get(i);
+                    Bigtx[1] = fees.get(j);
                 }
             }
-
         }
+
         return Bigtx;
     }
+
 
 }
