@@ -130,4 +130,21 @@ public class TxHandler {
         return sb.toString();
     }
 
+    public List<Object> getPool(){
+        Object[] indiv = {};
+        List<Object> pool;
+        pool = new ArrayList<>();
+        for (UTXO u : utxoPool.getAllUTXO()) {
+            Transaction.Output out = utxoPool.getTxOutput(u);
+            pool.add(out);
+            //System.out.println(pool);
+/*
+            System.out.println("  UTXO: " + bytesToHex(u.getTxHash()) +
+                    " | idx: " + u.getIndex() +
+                    " | value: " + out.value);
+*/
+        }
+        return pool;
+
+    }
 }

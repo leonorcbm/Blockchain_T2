@@ -1,4 +1,5 @@
 import java.security.*;
+import java.util.List;
 
 public class Main {
 
@@ -52,9 +53,28 @@ public class Main {
         // --- Show final results ---
         System.out.println("=== RESULTS ===");
         System.out.println("Accepted transactions: " + accepted.length);
+
+        System.out.println("Final UTXO pool entries:");
+        for (UTXO utxo : pool.getAllUTXO()) {
+            System.out.println(" - Hash=" + bytesToHex(utxo.getTxHash()) +
+                    " Index=" + utxo.getIndex() +
+                    " Value=" + pool.getTxOutput(utxo).value);
+        }
+
+        System.out.println("-----------------------------");
+        List<Object> miau =  handler.getPool();
+        System.out.println(miau);
+
+
+
     }
 
-    //  Hex formatting
+
+
+
+
+
+    // Small helper for pretty hex formatting
     private static String bytesToHex(byte[] bytes) {
         StringBuilder sb = new StringBuilder();
         for (byte b : bytes) sb.append(String.format("%02x", b));
