@@ -3,15 +3,21 @@ import java.util.*;
 public class TxHandler {
 
     private UTXOPool utxoPool;
+    private List<Transaction> acceptedTxs;
+    private Map<byte[], Double> feeMap = new HashMap<>();
+    private Double fee;
+
 
     /** Creates a copy of the given utxoPool */
     public TxHandler(UTXOPool utxoPool) {
         this.utxoPool = new UTXOPool(utxoPool);
+        this.acceptedTxs = new ArrayList<>();
     }
 
     /** Checks transaction validity under ScroogeCoin rules */
     public boolean isValidTx(Transaction tx) {
         HashSet<UTXO> claimed = new HashSet<>();
+
         double inputSum = 0;
         double outputSum = 0;
 
@@ -52,6 +58,8 @@ public class TxHandler {
 
         Set<Transaction> remaining = new HashSet<>(Arrays.asList(possibleTxs));
         List<Transaction> accepted = new ArrayList<>();
+
+
         boolean progress = true;
 
         while (progress) {
@@ -62,9 +70,12 @@ public class TxHandler {
                 Transaction tx = it.next();
 
                 if (isValidTx(tx)) {
-                    // Accept this tx
+                    fee = getTxFeeBeforeApply(tx);
+                    feeMap.put(tx.getHash(), fee);
+                    /*System.out.println("Processing tx fee: " + fee);*/
                     applyTx(tx);
                     accepted.add(tx);
+                    acceptedTxs.add(tx);
                     printTx(tx);
                     printPool();
                     it.remove();
@@ -118,6 +129,37 @@ public class TxHandler {
     // para cada tx temos de ter o input e output para calcular a fee
     //
 
+    public List<Transaction> getAcceptedTxs() {
+        return new ArrayList<>(acceptedTxs); // return a copy to avoid external modification
+    }
+
+    public double getTxFee(Transaction tx) {
+        return feeMap.put(tx.getHash(), fee);
+    }
+
+    public double getTxFeeBeforeApply(Transaction tx) {
+        double inputSum = 0;
+        double outputSum = 0;
+
+        for (Transaction.Input in : tx.getInputs()) {
+            UTXO utxo = new UTXO(in.prevTxHash, in.outputIndex);
+            Transaction.Output prevOut = utxoPool.getTxOutput(utxo);
+
+            if (prevOut == null) {
+                System.err.println("ERROR: input UTXO not found for fee calculation!");
+                return -1;
+            }
+
+            inputSum += prevOut.value;
+        }
+
+        for (Transaction.Output out : tx.getOutputs()) {
+            outputSum += out.value;
+        }
+
+        return inputSum - outputSum;
+    }
+
 
 
     /* Print UTXO pool contents */
@@ -146,6 +188,10 @@ public class TxHandler {
             pool.add(out);
         }
         return pool;
-
     }
+
+    public UTXOPool getUtxoPool() {
+        return utxoPool;
+    }
+
 }

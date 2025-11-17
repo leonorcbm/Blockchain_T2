@@ -17,6 +17,9 @@ public class Brute {
             // até chegarmos a penultima, isto é, o 4
             // guardar número de operações e tempo
 
+
+
+
         }
 
         return 2;

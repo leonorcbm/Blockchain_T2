@@ -103,6 +103,19 @@ public class Main {
 
         tx6.finalize();
 
+        Transaction tx7 = new Transaction();
+
+        tx7.addInput(tx6.getHash(), 0);
+
+        tx7.addOutput(0.5, pub);
+
+
+        byte[] raw7 = tx7.getRawDataToSign(0);
+        byte[] sig7 = Crypto.sign(priv, raw7);
+        tx7.addSignature(sig7, 0);   // ✔️ correct
+
+        tx7.finalize();
+
 
 
         // --- Run TxHandler on this tx ---
@@ -117,11 +130,8 @@ public class Main {
         System.out.println("Outputs: 2 (5.0, 3.0, 2.0)");
         System.out.println();
 
-        Transaction[] accepted = handler.handleTxs(new Transaction[]{tx});
-        Transaction[] accepted2 = handler.handleTxs(new Transaction[]{tx2});
-        Transaction[] accepted4 = handler.handleTxs(new Transaction[]{tx4});
-        Transaction[] accepted5 = handler.handleTxs(new Transaction[]{tx5});
-        Transaction[] accepted6 = handler.handleTxs(new Transaction[]{tx6});
+        Transaction[] allTxs = {tx, tx2, tx4, tx5, tx6, tx7};
+        Transaction[] accepted = handler.handleTxs(allTxs);
 
 
         // --- Show final results ---
@@ -129,16 +139,31 @@ public class Main {
         System.out.println("Accepted transactions: " + accepted.length);
 
         System.out.println("Final UTXO pool entries:");
-        for (UTXO utxo : pool.getAllUTXO()) {
+        for (UTXO utxo : handler.getUtxoPool().getAllUTXO()) {
+            Transaction.Output out = handler.getUtxoPool().getTxOutput(utxo);
             System.out.println(" - Hash=" + bytesToHex(utxo.getTxHash()) +
                     " Index=" + utxo.getIndex() +
-                    " Value=" + pool.getTxOutput(utxo).value);
+                    " Value=" + out.value);
         }
+
 
         System.out.println("-----------------------------");
         List<Object> miau =  handler.getPool();
         System.out.println(miau);
 
+
+        System.out.println("-----------------------------");
+        System.out.println("Fee of Tx1: " + handler.getTxFee(tx));
+        System.out.println("-----------------------------");
+        System.out.println("Fee of Tx2: " + handler.getTxFee(tx2));
+        System.out.println("-----------------------------");
+        System.out.println("Fee of Tx4: " + handler.getTxFee(tx4));
+        System.out.println("-----------------------------");
+        System.out.println("Fee of Tx5: " + handler.getTxFee(tx5));
+        System.out.println("-----------------------------");
+        System.out.println("Fee of Tx6: " + handler.getTxFee(tx6));
+        System.out.println("-----------------------------");
+        System.out.println("Fee of Tx7: " + handler.getTxFee(tx7));
 
 
     }
