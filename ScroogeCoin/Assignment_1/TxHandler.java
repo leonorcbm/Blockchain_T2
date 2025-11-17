@@ -134,7 +134,9 @@ public class TxHandler {
     }
 
     public double getTxFee(Transaction tx) {
-        return feeMap.put(tx.getHash(), fee);
+        Double f = feeMap.get(tx.getHash());
+        if (f == null) return 0;  // transaction not yet processed
+        return f;
     }
 
     public double getTxFeeBeforeApply(Transaction tx) {
