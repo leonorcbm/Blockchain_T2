@@ -1,4 +1,5 @@
 import java.security.*;
+import java.util.Arrays;
 import java.util.List;
 
 public class Main {
@@ -60,33 +61,46 @@ public class Main {
         // Finalize the tx
         tx2.finalize();
 
-        Transaction tx4 = new Transaction();
+        Transaction tx3 = new Transaction();
 
         // Spend the unspent 5-coin UTXO from tx (index 1)
-        tx4.addInput(tx.getHash(), 1);
+        tx3.addInput(tx.getHash(), 1);
 
         // Create outputs (example: split into 2 + 3)
-        tx4.addOutput(2.0, pub);
+        tx3.addOutput(2.0, pub);
 
         // Sign it
-        byte[] raw4 = tx4.getRawDataToSign(0);
+        byte[] raw4 = tx3.getRawDataToSign(0);
         byte[] sig4 = Crypto.sign(priv, raw4);
-        tx4.addSignature(sig4, 0);
+        tx3.addSignature(sig4, 0);
 
         // Finalize
-        tx4.finalize();
+        tx3.finalize();
 
+
+        Transaction tx4 = new Transaction();
+
+        tx4.addInput(tx2.getHash(), 0);
+
+        tx4.addOutput(2.0, pub);
+        tx4.addOutput(1.0, pub);
+
+        byte[] raw5 = tx4.getRawDataToSign(0);
+        byte[] sig5 = Crypto.sign(priv, raw5);
+        tx4.addSignature(sig5, 0);   // ✔️ correct
+
+        tx4.finalize();
 
         Transaction tx5 = new Transaction();
 
-        tx5.addInput(tx2.getHash(), 0);
+        tx5.addInput(tx4.getHash(), 0);
 
-        tx5.addOutput(2.0, pub);
+        tx5.addOutput(1.0, pub);
         tx5.addOutput(1.0, pub);
 
-        byte[] raw5 = tx5.getRawDataToSign(0);
-        byte[] sig5 = Crypto.sign(priv, raw5);
-        tx5.addSignature(sig5, 0);   // ✔️ correct
+        byte[] raw6 = tx5.getRawDataToSign(0);
+        byte[] sig6 = Crypto.sign(priv, raw6);
+        tx5.addSignature(sig6, 0);   // ✔️ correct
 
         tx5.finalize();
 
@@ -94,27 +108,14 @@ public class Main {
 
         tx6.addInput(tx5.getHash(), 0);
 
-        tx6.addOutput(1.0, pub);
-        tx6.addOutput(1.0, pub);
+        tx6.addOutput(0.5, pub);
 
-        byte[] raw6 = tx6.getRawDataToSign(0);
-        byte[] sig6 = Crypto.sign(priv, raw6);
-        tx6.addSignature(sig6, 0);   // ✔️ correct
+
+        byte[] raw7 = tx6.getRawDataToSign(0);
+        byte[] sig7 = Crypto.sign(priv, raw7);
+        tx6.addSignature(sig7, 0);   // ✔️ correct
 
         tx6.finalize();
-
-        Transaction tx7 = new Transaction();
-
-        tx7.addInput(tx6.getHash(), 0);
-
-        tx7.addOutput(0.5, pub);
-
-
-        byte[] raw7 = tx7.getRawDataToSign(0);
-        byte[] sig7 = Crypto.sign(priv, raw7);
-        tx7.addSignature(sig7, 0);   // ✔️ correct
-
-        tx7.finalize();
 
 
 
@@ -130,7 +131,7 @@ public class Main {
         System.out.println("Outputs: 2 (5.0, 3.0, 2.0)");
         System.out.println();
 
-        Transaction[] allTxs = {tx, tx2, tx4, tx5, tx6, tx7};
+        Transaction[] allTxs = {tx, tx2, tx3, tx4, tx5, tx6};
         Transaction[] accepted = handler.handleTxs(allTxs);
 
 
@@ -157,13 +158,18 @@ public class Main {
         System.out.println("-----------------------------");
         System.out.println("Fee of Tx2: " + handler.getTxFee(tx2));
         System.out.println("-----------------------------");
+        System.out.println("Fee of Tx3: " + handler.getTxFee(tx3));
+        System.out.println("-----------------------------");
         System.out.println("Fee of Tx4: " + handler.getTxFee(tx4));
         System.out.println("-----------------------------");
         System.out.println("Fee of Tx5: " + handler.getTxFee(tx5));
         System.out.println("-----------------------------");
         System.out.println("Fee of Tx6: " + handler.getTxFee(tx6));
         System.out.println("-----------------------------");
-        System.out.println("Fee of Tx7: " + handler.getTxFee(tx7));
+        System.out.println(handler.getAcceptedTxs());
+        System.out.println("-----------------------------");
+        float[] best = Brute.BruteF(pool, allTxs, handler);
+        System.out.println(Arrays.toString(best));
 
 
     }

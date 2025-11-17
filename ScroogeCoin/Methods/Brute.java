@@ -1,31 +1,36 @@
+import java.lang.reflect.Array;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public class Brute {
 
 
-    public int  BruteF(int sub, UTXOPool pool){
-        TxHandler handler = new TxHandler(pool);
-        List<Object> pooltx = handler.getPool();
+    public static float[] BruteF(UTXOPool pool, Transaction[] allTxs, TxHandler handler) {
+        List<Transaction> accepted = handler.getAcceptedTxs();
+        float[] Bigtx = new float[2];
+        float F = 0.0f;
 
-        for (Object tx : pooltx) {
-            //TODO
-            // meter aqui a o index e somar o index x vezes, guardar valor e ver
-            // exemplo
-            // [1, 2, 3, 4, 5]
-            // somar 1+2 1+3 1+4 1+5
-            // mas depois só temos de fazer 2+3 2+4 e 2+5
-            // até chegarmos a penultima, isto é, o 4
-            // guardar número de operações e tempo
-
-
-
-
+        // Store fees in a List
+        List<Float> fees = new ArrayList<>();
+        for (Transaction tx : accepted) {
+            fees.add((float) handler.getTxFee(tx));
         }
 
-        return 2;
+        for (int i = 0; i < fees.size(); i++) {
+            for (int j = i + 1; j < fees.size(); j++) {
+                float sum = fees.get(i) + fees.get(j);
+                if (sum > F) {
+                    F = sum;
+                    Bigtx[0] = fees.get(i);
+                    Bigtx[1] = fees.get(j);
+                }
+            }
+        }
+
+        return Bigtx;
     }
-
-
 
 
 }
