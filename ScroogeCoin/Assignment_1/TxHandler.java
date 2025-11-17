@@ -15,18 +15,18 @@ public class TxHandler {
         double inputSum = 0;
         double outputSum = 0;
 
-        // Check inputs
+        // Check UTXOs
         for (int i = 0; i < tx.numInputs(); i++) {
             Transaction.Input in = tx.getInput(i);
             UTXO utxo = new UTXO(in.prevTxHash, in.outputIndex);
 
-            // 1. UTXO must exist
+            // UTXO must exist
             if (!utxoPool.contains(utxo)) return false;
 
-            // 3. No double spending within the tx
+            // No double spending within the tx
             if (!claimed.add(utxo)) return false;
 
-            // 2. Signature must be valid
+            // Signature must be valid
             Transaction.Output prevOut = utxoPool.getTxOutput(utxo);
             if (!Crypto.verifySignature(prevOut.address, tx.getRawDataToSign(i), in.signature))
                 return false;
@@ -41,7 +41,7 @@ public class TxHandler {
             outputSum += out.value;
         }
 
-        // 5. No value creation
+        // No value creation
         return inputSum + 1e-12 >= outputSum;
     }
 
@@ -93,7 +93,7 @@ public class TxHandler {
         }
     }
 
-    /* Pretty print a transaction in a readable way */
+    /* Print a transaction in a readable way */
     private void printTx(Transaction tx) {
         System.out.println("-------------------------------------------------");
         System.out.println("Transaction " + bytesToHex(tx.getHash()));
@@ -123,7 +123,7 @@ public class TxHandler {
         }
     }
 
-    /* Helper to convert bytes → hex */
+    /* Convert bytes → hex */
     private static String bytesToHex(byte[] bytes) {
         StringBuilder sb = new StringBuilder();
         for (byte b : bytes) sb.append(String.format("%02x", b));
