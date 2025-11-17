@@ -4,7 +4,7 @@ public class TxHandler {
 
     private UTXOPool utxoPool;
     private List<Transaction> acceptedTxs;
-    private Map<byte[], Double> feeMap = new HashMap<>();
+    public Map<byte[], Double> feeMap = new HashMap<>();
     private Double fee;
 
 
@@ -134,7 +134,9 @@ public class TxHandler {
     }
 
     public double getTxFee(Transaction tx) {
-        return feeMap.put(tx.getHash(), fee);
+        Double f = feeMap.get(tx.getHash());
+        if (f == null) return 0;  // transaction not yet processed
+        return f;
     }
 
     public double getTxFeeBeforeApply(Transaction tx) {
