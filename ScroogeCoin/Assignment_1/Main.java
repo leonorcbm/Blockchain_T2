@@ -40,15 +40,89 @@ public class Main {
         // now finalize
         tx.finalize();
 
+
+
+
+        // --- Build a new transaction that spends the output from the previous tx ---
+        Transaction tx2 = new Transaction();
+
+        // Spend output 0 of the previous tx
+        tx2.addInput(tx.getHash(), 0);
+
+        // Create outputs
+        tx2.addOutput(3.0, pub);
+
+        // --- Sign the input ---
+        byte[] raw2 = tx2.getRawDataToSign(0);
+        byte[] sig2 = Crypto.sign(priv, raw2);
+        tx2.addSignature(sig2, 0);
+
+        // Finalize the tx
+        tx2.finalize();
+
+        Transaction tx4 = new Transaction();
+
+        // Spend the unspent 5-coin UTXO from tx (index 1)
+        tx4.addInput(tx.getHash(), 1);
+
+        // Create outputs (example: split into 2 + 3)
+        tx4.addOutput(2.0, pub);
+
+        // Sign it
+        byte[] raw4 = tx4.getRawDataToSign(0);
+        byte[] sig4 = Crypto.sign(priv, raw4);
+        tx4.addSignature(sig4, 0);
+
+        // Finalize
+        tx4.finalize();
+
+
+        Transaction tx5 = new Transaction();
+
+        tx5.addInput(tx2.getHash(), 0);
+
+        tx5.addOutput(2.0, pub);
+        tx5.addOutput(1.0, pub);
+
+        byte[] raw5 = tx5.getRawDataToSign(0);
+        byte[] sig5 = Crypto.sign(priv, raw5);
+        tx5.addSignature(sig5, 0);   // ✔️ correct
+
+        tx5.finalize();
+
+        Transaction tx6 = new Transaction();
+
+        tx6.addInput(tx5.getHash(), 0);
+
+        tx6.addOutput(1.0, pub);
+        tx6.addOutput(1.0, pub);
+
+        byte[] raw6 = tx6.getRawDataToSign(0);
+        byte[] sig6 = Crypto.sign(priv, raw6);
+        tx6.addSignature(sig6, 0);   // ✔️ correct
+
+        tx6.finalize();
+
+
+
         // --- Run TxHandler on this tx ---
         TxHandler handler = new TxHandler(pool);
 
+
+        //TODO
+        // Mudar isto para não ser hardcoded
+        // Isto é, ver o número de inputs e de outputs de forma dinâmica sem estar só uma string
         System.out.println("=== PROCESSING TRANSACTION ===");
-        System.out.println("Inputs: 1");
-        System.out.println("Outputs: 2 (5.0, 5.0)");
+        System.out.println("Inputs: 2");
+        System.out.println("Outputs: 2 (5.0, 3.0, 2.0)");
         System.out.println();
 
         Transaction[] accepted = handler.handleTxs(new Transaction[]{tx});
+        Transaction[] accepted2 = handler.handleTxs(new Transaction[]{tx2});
+        Transaction[] accepted4 = handler.handleTxs(new Transaction[]{tx4});
+        Transaction[] accepted5 = handler.handleTxs(new Transaction[]{tx5});
+        Transaction[] accepted6 = handler.handleTxs(new Transaction[]{tx6});
+
 
         // --- Show final results ---
         System.out.println("=== RESULTS ===");

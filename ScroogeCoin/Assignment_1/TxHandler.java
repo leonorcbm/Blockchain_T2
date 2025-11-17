@@ -112,6 +112,14 @@ public class TxHandler {
         }
     }
 
+
+    //TODO
+    // ter as tx todas para conseguir calcular a fee entre o input e output
+    // para cada tx temos de ter o input e output para calcular a fee
+    //
+
+
+
     /* Print UTXO pool contents */
     private void printPool() {
         System.out.println("Current UTXO Pool:");
@@ -131,18 +139,11 @@ public class TxHandler {
     }
 
     public List<Object> getPool(){
-        Object[] indiv = {};
         List<Object> pool;
         pool = new ArrayList<>();
         for (UTXO u : utxoPool.getAllUTXO()) {
             Transaction.Output out = utxoPool.getTxOutput(u);
             pool.add(out);
-            //System.out.println(pool);
-/*
-            System.out.println("  UTXO: " + bytesToHex(u.getTxHash()) +
-                    " | idx: " + u.getIndex() +
-                    " | value: " + out.value);
-*/
         }
         return pool;
 
