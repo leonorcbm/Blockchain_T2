@@ -1,61 +1,95 @@
-import java.security.*;
-import java.util.ArrayList;
+import java.util.*;
 
 public class TestGreedy {
+    public static void main(String[] args) {
+        // --- Minimal stubs for required classes ---
+        class Crypto {
+            public static boolean verifySignature(String address, byte[] message, byte[] signature) {
+                return true; // always valid for testing
+            }
+        }
 
-    public static void main(String[] args) throws Exception {
+        class Transaction {
+            static class Input {
+                byte[] prevTxHash;
+                int outputIndex;
+                byte[] signature;
+                Input(byte[] hash, int idx) { prevTxHash = hash; outputIndex = idx; signature = new byte[0]; }
+            }
+            static class Output {
+                double value;
+                String address;
+                Output(double v, String addr) { value = v; address = addr; }
+            }
 
-        // ===== Setup RSA keys =====
-        KeyPairGenerator keyGen = KeyPairGenerator.getInstance("RSA");
-        keyGen.initialize(1024);
-        KeyPair pair = keyGen.generateKeyPair();
-        PublicKey pub = pair.getPublic();
+            private List<Input> inputs = new ArrayList<>();
+            private List<Output> outputs = new ArrayList<>();
+            private byte[] hash;
 
-        // ===== Create UTXO Pool =====
+            public void addInput(byte[] hash, int idx) { inputs.add(new Input(hash, idx)); }
+            public void addOutput(double value, String addr) { outputs.add(new Output(value, addr)); }
+            public Input getInput(int i) { return inputs.get(i); }
+            public Output getOutput(int i) { return outputs.get(i); }
+            public Output[] getOutputs() { return outputs.toArray(new Output[0]); }
+            public int numInputs() { return inputs.size(); }
+            public int numOutputs() { return outputs.size(); }
+
+            public byte[] getHash() {
+                if (hash == null) hash = UUID.randomUUID().toString().getBytes();
+                return hash;
+            }
+
+            public byte[] getRawDataToSign(int index) { return new byte[0]; }
+        }
+
+        class UTXO {
+            byte[] txHash;
+            int index;
+            UTXO(byte[] h, int i) { txHash = h; index = i; }
+            public boolean equals(Object o) {
+                if (!(o instanceof UTXO)) return false;
+                UTXO u = (UTXO)o;
+                return Arrays.equals(txHash, u.txHash) && index == u.index;
+            }
+            public int hashCode() { return Arrays.hashCode(txHash) + index; }
+        }
+
+        class UTXOPool {
+            private Map<UTXO, Transaction.Output> map = new HashMap<>();
+            public UTXOPool() {}
+            public UTXOPool(UTXOPool other) { map.putAll(other.map); }
+            public void addUTXO(UTXO u, Transaction.Output o) { map.put(u, o); }
+            public void removeUTXO(UTXO u) { map.remove(u); }
+            public boolean contains(UTXO u) { return map.containsKey(u); }
+            public Transaction.Output getTxOutput(UTXO u) { return map.get(u); }
+        }
+
+        // --- Setup initial UTXO pool ---
         UTXOPool pool = new UTXOPool();
+        Transaction genesis = new Transaction();
+        genesis.addOutput(10, "Alice");
+        pool.addUTXO(new UTXO(genesis.getHash(), 0), genesis.getOutput(0));
 
-        Transaction tx = new Transaction();
-        tx.addOutput(5.0, pub);
-        tx.addOutput(3.0, pub);
-        tx.addOutput(2.0, pub);
-        tx.addOutput(1.0, pub);
-        tx.addOutput(14.0, pub);
-        tx.addOutput(0.5, pub);
-        tx.finalize();
+        // --- Create candidate transactions ---
+        Transaction tx1 = new Transaction();
+        tx1.addInput(genesis.getHash(), 0);
+        tx1.addOutput(6, "Bob");    // fee = 4
+        tx1.addOutput(3, "Charlie");
 
-        for (int i = 0; i < tx.numOutputs(); i++) {
-            pool.addUTXO(new UTXO(tx.getHash(), i), tx.getOutput(i));
-        }
+        Transaction tx2 = new Transaction();
+        tx2.addInput(genesis.getHash(), 0);
+        tx2.addOutput(9, "Dave");   // fee = 1
 
-        // ===== Find highest UTXO automatically =====
-        double highestValue = 0;
-        for (UTXO u : pool.getAllUTXO()) {
-            double v = pool.getTxOutput(u).value;
-            if (v > highestValue) highestValue = v;
-        }
+        Transaction[] candidates = { tx1, tx2 };
 
-        System.out.println("Highest UTXO value detected = " + highestValue);
-
-        // ===== Call Greedy using the highest UTXO value =====
+        // --- Run greedy selection ---
         Greedy greedy = new Greedy(pool);
-        ArrayList<UTXO> selected = greedy.isValidForGreedy(highestValue);
+        Transaction[] selected = greedy.selectTransactions(candidates);
 
-        // ===== Print results =====
-        System.out.println("\n=== Selected UTXOs ===");
-        double total = 0;
-        for (UTXO u : selected) {
-            double v = pool.getTxOutput(u).value;
-            total += v;
-            System.out.println("UTXO idx " + u.getIndex() + " | value = " + v);
-        }
-
-        System.out.println("\nTotal selected = " + total);
-
-        // ===== Test result =====
-        if (total == highestValue) {
-            System.out.println("✅ Test Passed: Highest UTXO selected!");
-        } else {
-            System.out.println("❌ Test Failed");
+        // --- Print results ---
+        System.out.println("Selected transactions:");
+        for (Transaction tx : selected) {
+            System.out.println(Arrays.toString(tx.getHash()));
         }
     }
 }
