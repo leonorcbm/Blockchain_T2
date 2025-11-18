@@ -1,46 +1,66 @@
 import java.util.*;
 
 public class Greedy {
+    private final UTXOPool pool;
 
-    private final UTXOPool utxoPool;
+    // keep only what's required by the assignment: constructor + greedy selector
+    public Greedy(UTXOPool pool) { this.pool = new UTXOPool(pool); }
 
-    public Greedy(UTXOPool pool) {
-        this.utxoPool = pool;
+    // Return a set of transactions chosen greedily to maximize fees.
+    public Transaction[] selectTransactions(Transaction[] candidates) {
+        if (candidates == null || candidates.length == 0) return new Transaction[0];
+
+        UTXOPool working = new UTXOPool(pool);
+        List<Transaction> remaining = new ArrayList<>(Arrays.asList(candidates));
+        List<Transaction> accepted = new ArrayList<>();
+
+        while (true) {
+            Transaction best = null; double bestFee = Double.NEGATIVE_INFINITY;
+            for (Transaction tx : remaining) {
+                if (!isValidTxAgainstPool(tx, working)) continue;
+                double fee = computeFeeUsingPool(tx, working);
+                if (fee > bestFee) { best = tx; bestFee = fee; }
+            }
+            if (best == null) break;
+            applyTxToPool(best, working);
+            accepted.add(best);
+            remaining.remove(best);
+        }
+
+        return accepted.toArray(new Transaction[0]);
     }
 
-    /**
-     * Greedy algorithm:
-     * - Sort UTXOs by highest value
-     * - Pick until targetAmount is reached or exceeded
-     * - Return selected UTXOs
-     */
-    public ArrayList<UTXO> isValidForGreedy(double targetAmount) {
-
-        ArrayList<UTXO> allUTXOs = new ArrayList<>(utxoPool.getAllUTXO());
-        ArrayList<UTXO> selected = new ArrayList<>();
-
-        // Sort descending by value
-        allUTXOs.sort((a, b) -> {
-            double va = utxoPool.getTxOutput(a).value;
-            double vb = utxoPool.getTxOutput(b).value;
-            return Double.compare(vb, va);   // descending
-        });
-
-        double sum = 0;
-
-        for (UTXO u : allUTXOs) {
-            if (sum >= targetAmount) break;
-
-            double value = utxoPool.getTxOutput(u).value;
-            selected.add(u);
-            sum += value;
+    // --- helper methods (minimal, internal) ---
+    private double computeFeeUsingPool(Transaction tx, UTXOPool p) {
+        double in = 0, out = 0;
+        for (int i=0;i<tx.numInputs();i++) {
+            Transaction.Input I = tx.getInput(i);
+            UTXO u = new UTXO(I.prevTxHash, I.outputIndex);
+            Transaction.Output o = p.getTxOutput(u);
+            if (o == null) return Double.NEGATIVE_INFINITY;
+            in += o.value;
         }
+        for (Transaction.Output o: tx.getOutputs()) out += o.value;
+        return in - out;
+    }
 
-        // Could not reach the target → return empty set
-        if (sum < targetAmount) {
-            return new ArrayList<>();
+    private boolean isValidTxAgainstPool(Transaction tx, UTXOPool p) {
+        HashSet<UTXO> seen = new HashSet<>(); double in = 0, out = 0;
+        for (int i=0;i<tx.numInputs();i++) {
+            Transaction.Input I = tx.getInput(i);
+            UTXO u = new UTXO(I.prevTxHash, I.outputIndex);
+            if (!p.contains(u) || !seen.add(u)) return false;
+            Transaction.Output prev = p.getTxOutput(u);
+            if (!Crypto.verifySignature(prev.address, tx.getRawDataToSign(i), I.signature)) return false;
+            in += prev.value;
         }
+        for (Transaction.Output o: tx.getOutputs()) { if (o.value < 0) return false; out += o.value; }
+        return in + 1e-12 >= out;
+    }
 
-        return selected;
+    private void applyTxToPool(Transaction tx, UTXOPool p) {
+        for (int i=0;i<tx.numInputs();i++) p.removeUTXO(new UTXO(tx.getInput(i).prevTxHash, tx.getInput(i).outputIndex));
+        byte[] h = tx.getHash();
+        for (int i=0;i<tx.numOutputs();i++) p.addUTXO(new UTXO(h,i), tx.getOutput(i));
     }
 }

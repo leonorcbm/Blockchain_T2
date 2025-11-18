@@ -132,21 +132,36 @@ public class Main {
         System.out.println();
 
         Transaction[] allTxs = {tx, tx2, tx3, tx4, tx5, tx6};
+
+        System.out.println("\n##################################\n##################################\n##################################");
+
+
+        // --- Greedy selector ---
+        Greedy greedy = new Greedy(pool);
+        Transaction[] greedySelected = greedy.selectTransactions(allTxs);
+        System.out.println("\n--- Greedy selection ---");
+        System.out.println("Selected txs: " + greedySelected.length);
+        UTXOPool working = new UTXOPool(pool);
+        double totalFee = 0.0;
+        for (Transaction g : greedySelected) {
+            double fee = applyAndComputeFee(working, g);
+            totalFee += fee;
+            System.out.println(String.format("  %s  (fee=%.4f)", bytesToHex(g.getHash()), fee));
+        }
+        System.out.println(String.format("Total fee collected by Greedy: %.4f", totalFee));
+
         Transaction[] accepted = handler.handleTxs(allTxs);
 
-
-        // --- Show final results ---
-        System.out.println("=== RESULTS ===");
+        // Final results
+        System.out.println("\n\n=== RESULTS ===");
         System.out.println("Accepted transactions: " + accepted.length);
+        UTXOPool finalPool = handler.getUtxoPool();
+        System.out.println("Final UTXO count: " + finalPool.getAllUTXO().size());
 
-        System.out.println("Final UTXO pool entries:");
-        for (UTXO utxo : handler.getUtxoPool().getAllUTXO()) {
-            Transaction.Output out = handler.getUtxoPool().getTxOutput(utxo);
-            System.out.println(" - Hash=" + bytesToHex(utxo.getTxHash()) +
-                    " Index=" + utxo.getIndex() +
-                    " Value=" + out.value);
-        }
-
+        System.out.println("\n" +
+                "\n##################################" +
+                "\n##################################" +
+                "\n##################################");
 
         System.out.println("-----------------------------");
         List<Object> miau =  handler.getPool();
@@ -174,15 +189,25 @@ public class Main {
 
     }
 
-
-
-
-
-
     // Small helper for pretty hex formatting
     private static String bytesToHex(byte[] bytes) {
         StringBuilder sb = new StringBuilder();
         for (byte b : bytes) sb.append(String.format("%02x", b));
         return sb.toString();
+    }
+    // Apply tx to working pool and return its fee
+    private static double applyAndComputeFee(UTXOPool working, Transaction tx) {
+        double inSum = 0, outSum = 0;
+        for (int i = 0; i < tx.numInputs(); i++) {
+            Transaction.Input in = tx.getInput(i);
+            UTXO u = new UTXO(in.prevTxHash, in.outputIndex);
+            Transaction.Output prev = working.getTxOutput(u);
+            if (prev != null) inSum += prev.value;
+            working.removeUTXO(u);
+        }
+        for (Transaction.Output o : tx.getOutputs()) { outSum += o.value; }
+        byte[] h = tx.getHash();
+        for (int i = 0; i < tx.numOutputs(); i++) working.addUTXO(new UTXO(h, i), tx.getOutput(i));
+        return inSum - outSum;
     }
 }

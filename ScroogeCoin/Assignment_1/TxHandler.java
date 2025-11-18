@@ -6,14 +6,12 @@ public class TxHandler {
     private List<Transaction> acceptedTxs;
     public Map<byte[], Double> feeMap = new HashMap<>();
     private Double fee;
-    private Greedy greedy;
 
 
     /** Creates a copy of the given utxoPool */
     public TxHandler(UTXOPool utxoPool) {
         this.utxoPool = new UTXOPool(utxoPool);
         this.acceptedTxs = new ArrayList<>();
-        this.greedy = new Greedy(utxoPool);
     }
 
     /** Checks transaction validity under ScroogeCoin rules */
@@ -197,12 +195,6 @@ public class TxHandler {
     public UTXOPool getUtxoPool() {
         return utxoPool;
     }
-
-    // ############ GREEDY ############
-    public ArrayList<UTXO> getGreedyUTXOs(double targetAmount) {
-        return greedy.isValidForGreedy(targetAmount);
-    }
-
 
 
 
