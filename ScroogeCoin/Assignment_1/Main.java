@@ -62,18 +62,14 @@ public class Main {
         tx2.finalize();
 
         Transaction tx3 = new Transaction();
-
         // Spend the unspent 5-coin UTXO from tx (index 1)
         tx3.addInput(tx.getHash(), 1);
-
         // Create outputs (example: split into 2 + 3)
         tx3.addOutput(2.0, pub);
-
         // Sign it
         byte[] raw4 = tx3.getRawDataToSign(0);
         byte[] sig4 = Crypto.sign(priv, raw4);
         tx3.addSignature(sig4, 0);
-
         // Finalize
         tx3.finalize();
 
@@ -104,17 +100,21 @@ public class Main {
         tx5.finalize();
 
         Transaction tx6 = new Transaction();
-
         tx6.addInput(tx5.getHash(), 0);
-
         tx6.addOutput(0.5, pub);
-
 
         byte[] raw7 = tx6.getRawDataToSign(0);
         byte[] sig7 = Crypto.sign(priv, raw7);
         tx6.addSignature(sig7, 0);   // ✔️ correct
-
         tx6.finalize();
+
+        Transaction txBait = new Transaction();
+        txBait.addInput(genesis.getHash(), 0);
+        txBait.addOutput(5.5, pub);
+
+        byte[] rawBait = txBait.getRawDataToSign(0);
+        txBait.addSignature(Crypto.sign(priv, rawBait), 0);
+        txBait.finalize();
 
 
 
