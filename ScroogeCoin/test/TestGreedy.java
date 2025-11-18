@@ -1,95 +1,175 @@
-import java.util.*;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.*;
+
+import java.security.*;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Set;
 
 public class TestGreedy {
-    public static void main(String[] args) {
-        // --- Minimal stubs for required classes ---
-        class Crypto {
-            public static boolean verifySignature(String address, byte[] message, byte[] signature) {
-                return true; // always valid for testing
-            }
-        }
 
-        class Transaction {
-            static class Input {
-                byte[] prevTxHash;
-                int outputIndex;
-                byte[] signature;
-                Input(byte[] hash, int idx) { prevTxHash = hash; outputIndex = idx; signature = new byte[0]; }
-            }
-            static class Output {
-                double value;
-                String address;
-                Output(double v, String addr) { value = v; address = addr; }
-            }
+    private KeyPair pairAlice;
+    private KeyPair pairBob;
+    private KeyPair pairCharlie;
+    private UTXOPool pool;
+    private Transaction genesis;
 
-            private List<Input> inputs = new ArrayList<>();
-            private List<Output> outputs = new ArrayList<>();
-            private byte[] hash;
+    @BeforeEach
+    public void setUp() throws Exception {
+        // 1. Generate real RSA keys
+        KeyPairGenerator keyGen = KeyPairGenerator.getInstance("RSA");
+        keyGen.initialize(1024);
+        pairAlice = keyGen.generateKeyPair();
+        pairBob = keyGen.generateKeyPair();
+        pairCharlie = keyGen.generateKeyPair();
 
-            public void addInput(byte[] hash, int idx) { inputs.add(new Input(hash, idx)); }
-            public void addOutput(double value, String addr) { outputs.add(new Output(value, addr)); }
-            public Input getInput(int i) { return inputs.get(i); }
-            public Output getOutput(int i) { return outputs.get(i); }
-            public Output[] getOutputs() { return outputs.toArray(new Output[0]); }
-            public int numInputs() { return inputs.size(); }
-            public int numOutputs() { return outputs.size(); }
+        // 2. Create Genesis Transaction (Alice gets 10.0 coins)
+        genesis = new Transaction();
+        genesis.addOutput(10.0, pairAlice.getPublic());
+        genesis.finalize();
 
-            public byte[] getHash() {
-                if (hash == null) hash = UUID.randomUUID().toString().getBytes();
-                return hash;
-            }
+        // 3. Initialize UTXOPool
+        pool = new UTXOPool();
+        UTXO u = new UTXO(genesis.getHash(), 0);
+        pool.addUTXO(u, genesis.getOutput(0));
+    }
 
-            public byte[] getRawDataToSign(int index) { return new byte[0]; }
-        }
+    @Test
+    public void testSimpleValidTransaction() throws Exception {
+        // Alice sends 9.0 to Bob, fee is 1.0
+        Transaction tx = new Transaction();
+        tx.addInput(genesis.getHash(), 0);
+        tx.addOutput(9.0, pairBob.getPublic());
 
-        class UTXO {
-            byte[] txHash;
-            int index;
-            UTXO(byte[] h, int i) { txHash = h; index = i; }
-            public boolean equals(Object o) {
-                if (!(o instanceof UTXO)) return false;
-                UTXO u = (UTXO)o;
-                return Arrays.equals(txHash, u.txHash) && index == u.index;
-            }
-            public int hashCode() { return Arrays.hashCode(txHash) + index; }
-        }
+        // Sign
+        byte[] sig = Crypto.sign(pairAlice.getPrivate(), tx.getRawDataToSign(0));
+        tx.addSignature(sig, 0);
+        tx.finalize();
 
-        class UTXOPool {
-            private Map<UTXO, Transaction.Output> map = new HashMap<>();
-            public UTXOPool() {}
-            public UTXOPool(UTXOPool other) { map.putAll(other.map); }
-            public void addUTXO(UTXO u, Transaction.Output o) { map.put(u, o); }
-            public void removeUTXO(UTXO u) { map.remove(u); }
-            public boolean contains(UTXO u) { return map.containsKey(u); }
-            public Transaction.Output getTxOutput(UTXO u) { return map.get(u); }
-        }
+        Transaction[] candidates = { tx };
 
-        // --- Setup initial UTXO pool ---
-        UTXOPool pool = new UTXOPool();
-        Transaction genesis = new Transaction();
-        genesis.addOutput(10, "Alice");
-        pool.addUTXO(new UTXO(genesis.getHash(), 0), genesis.getOutput(0));
+        Greedy greedy = new Greedy(pool);
+        Transaction[] result = greedy.selectTransactions(candidates);
 
-        // --- Create candidate transactions ---
+        assertEquals(1, result.length);
+        assertArrayEquals(tx.getHash(), result[0].getHash());
+    }
+
+    @Test
+    public void testDoubleSpendConflict() throws Exception {
+        // Scenario: Alice tries to spend the same UTXO twice.
+        // Tx1: Fee 1.0 (10.0 -> 9.0)
+        Transaction txLowFee = new Transaction();
+        txLowFee.addInput(genesis.getHash(), 0);
+        txLowFee.addOutput(9.0, pairBob.getPublic());
+        txLowFee.addSignature(Crypto.sign(pairAlice.getPrivate(), txLowFee.getRawDataToSign(0)), 0);
+        txLowFee.finalize();
+
+        // Tx2: Fee 4.0 (10.0 -> 6.0)
+        Transaction txHighFee = new Transaction();
+        txHighFee.addInput(genesis.getHash(), 0);
+        txHighFee.addOutput(6.0, pairCharlie.getPublic());
+        txHighFee.addSignature(Crypto.sign(pairAlice.getPrivate(), txHighFee.getRawDataToSign(0)), 0);
+        txHighFee.finalize();
+
+        Transaction[] candidates = { txLowFee, txHighFee };
+
+        Greedy greedy = new Greedy(pool);
+        Transaction[] result = greedy.selectTransactions(candidates);
+
+        // Should only pick ONE transaction
+        assertEquals(1, result.length);
+        // Should pick the one with HIGHER fee (Tx2)
+        assertArrayEquals(txHighFee.getHash(), result[0].getHash(), "Greedy should pick the higher fee transaction");
+    }
+
+    @Test
+    public void testDependentTransactions() throws Exception {
+        // Scenario: Tx2 depends on Tx1.
+
+        // Tx1: Alice -> Bob (10.0 -> 10.0, Fee 0)
         Transaction tx1 = new Transaction();
         tx1.addInput(genesis.getHash(), 0);
-        tx1.addOutput(6, "Bob");    // fee = 4
-        tx1.addOutput(3, "Charlie");
+        tx1.addOutput(10.0, pairBob.getPublic());
+        tx1.addSignature(Crypto.sign(pairAlice.getPrivate(), tx1.getRawDataToSign(0)), 0);
+        tx1.finalize();
 
+        // Tx2: Bob -> Charlie (10.0 -> 8.0, Fee 2)
         Transaction tx2 = new Transaction();
-        tx2.addInput(genesis.getHash(), 0);
-        tx2.addOutput(9, "Dave");   // fee = 1
+        tx2.addInput(tx1.getHash(), 0);
+        tx2.addOutput(8.0, pairCharlie.getPublic());
+        tx2.addSignature(Crypto.sign(pairBob.getPrivate(), tx2.getRawDataToSign(0)), 0);
+        tx2.finalize();
 
-        Transaction[] candidates = { tx1, tx2 };
+        // Pass them in REVERSE order to ensure algorithm handles dependencies
+        Transaction[] candidates = { tx2, tx1 };
 
-        // --- Run greedy selection ---
         Greedy greedy = new Greedy(pool);
-        Transaction[] selected = greedy.selectTransactions(candidates);
+        Transaction[] result = greedy.selectTransactions(candidates);
 
-        // --- Print results ---
-        System.out.println("Selected transactions:");
-        for (Transaction tx : selected) {
-            System.out.println(Arrays.toString(tx.getHash()));
-        }
+        assertEquals(2, result.length);
+
+        // Verify both are present
+        Set<String> hashes = new HashSet<>();
+        for(Transaction t : result) hashes.add(bytesToHex(t.getHash()));
+
+        assertTrue(hashes.contains(bytesToHex(tx1.getHash())));
+        assertTrue(hashes.contains(bytesToHex(tx2.getHash())));
+    }
+
+    @Test
+    public void testInvalidSignature() throws Exception {
+        // Transaction with wrong signature (Alice signs with Bob's key)
+        Transaction tx = new Transaction();
+        tx.addInput(genesis.getHash(), 0);
+        tx.addOutput(9.0, pairBob.getPublic());
+
+        // WRONG KEY used for signing
+        byte[] sig = Crypto.sign(pairBob.getPrivate(), tx.getRawDataToSign(0));
+        tx.addSignature(sig, 0);
+        tx.finalize();
+
+        Transaction[] candidates = { tx };
+
+        Greedy greedy = new Greedy(pool);
+        Transaction[] result = greedy.selectTransactions(candidates);
+
+        assertEquals(0, result.length, "Should reject invalid signature");
+    }
+
+    @Test
+    public void testTamperedTransaction() throws Exception {
+        // Create valid tx, then tamper with output value
+        Transaction tx = new Transaction();
+        tx.addInput(genesis.getHash(), 0);
+        tx.addOutput(9.0, pairBob.getPublic());
+        byte[] sig = Crypto.sign(pairAlice.getPrivate(), tx.getRawDataToSign(0));
+        tx.addSignature(sig, 0);
+
+        // Tamper: Change output value AFTER signing (signature becomes invalid for new data)
+        // Note: This depends on implementation of Transaction.
+        // If getRawDataToSign includes output values, this breaks the sig.
+        // We'll simulate tampering by just finalizing a different object with same signature.
+
+        Transaction tampered = new Transaction();
+        tampered.addInput(genesis.getHash(), 0);
+        tampered.addOutput(100.0, pairBob.getPublic()); // Changed 9.0 to 100.0
+        tampered.addSignature(sig, 0); // Reused old signature
+        tampered.finalize();
+
+        Transaction[] candidates = { tampered };
+
+        Greedy greedy = new Greedy(pool);
+        Transaction[] result = greedy.selectTransactions(candidates);
+
+        assertEquals(0, result.length, "Should reject tampered transaction");
+    }
+
+    // Helper
+    private static String bytesToHex(byte[] bytes) {
+        StringBuilder sb = new StringBuilder();
+        for (byte b : bytes) sb.append(String.format("%02x", b));
+        return sb.toString();
     }
 }

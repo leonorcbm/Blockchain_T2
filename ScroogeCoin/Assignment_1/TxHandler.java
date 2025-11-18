@@ -55,7 +55,7 @@ public class TxHandler {
      * Repeatedly process transactions until no more can be accepted.
      */
     public Transaction[] handleTxs(Transaction[] possibleTxs) {
-
+        
         Set<Transaction> remaining = new HashSet<>(Arrays.asList(possibleTxs));
         List<Transaction> accepted = new ArrayList<>();
 

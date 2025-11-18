@@ -31,7 +31,7 @@ public class Main {
         Transaction tx = new Transaction();
         tx.addInput(genesis.getHash(), 0);
         tx.addOutput(5.0, pub);  // send 5 back to self
-        tx.addOutput(5.0, pub);  // another 5
+        tx.addOutput(4.0, pub);  // another 5
 
         // --- Signing ---
         byte[] raw = tx.getRawDataToSign(0);
@@ -83,7 +83,6 @@ public class Main {
         tx4.addInput(tx2.getHash(), 0);
 
         tx4.addOutput(2.0, pub);
-        tx4.addOutput(1.0, pub);
 
         byte[] raw5 = tx4.getRawDataToSign(0);
         byte[] sig5 = Crypto.sign(priv, raw5);
@@ -164,8 +163,8 @@ public class Main {
                 "\n##################################");
 
         System.out.println("-----------------------------");
-        List<Object> miau =  handler.getPool();
-        System.out.println(miau);
+        List<Object> trans =  handler.getPool();
+        System.out.println(trans);
 
 
         System.out.println("-----------------------------");
@@ -183,8 +182,38 @@ public class Main {
         System.out.println("-----------------------------");
         System.out.println(handler.getAcceptedTxs());
         System.out.println("-----------------------------");
-        float[] best = Brute.BruteF(pool, allTxs, handler);
-        System.out.println(Arrays.toString(best));
+
+
+
+        // CASE FOR 2
+        System.out.println("## Case for Max Two Transactions");
+        float[] bestTwo = Brute.BruteF(pool, allTxs, handler);
+        System.out.println("Best 2 Fees found (Total Max Fee): " + Arrays.toString(bestTwo));
+        System.out.println("Total Fee: " + (bestTwo[0] + bestTwo[1]));
+        System.out.println("-----------------------------");
+
+
+        // CASE FOR 3
+        System.out.println("## Case for Max Three Transactions");
+        float[] bestThree = Brute.BruteF_Three(handler); // Uses the new method
+        System.out.println("Best 3 Fees found (Total Max Fee): " + Arrays.toString(bestThree));
+        System.out.println("Total Fee: " + (bestThree[0] + bestThree[1] + bestThree[2]));
+        System.out.println("-----------------------------");
+
+
+        // CASE FOR MAX ALL (Brute Force Power Set)
+        System.out.println("## Case for Max Subset (Brute Force)");
+        float[] bestSubset = Brute.BruteF_MaxAll(handler);
+        System.out.println("Best Subset Fees found: " + Arrays.toString(bestSubset));
+
+        float totalMaxFee = 0.0f;
+        for (float f : bestSubset) {
+            totalMaxFee += f;
+        }
+        System.out.println("Total Fee: " + totalMaxFee);
+        System.out.println("-----------------------------");
+
+
 
 
     }
@@ -210,4 +239,8 @@ public class Main {
         for (int i = 0; i < tx.numOutputs(); i++) working.addUTXO(new UTXO(h, i), tx.getOutput(i));
         return inSum - outSum;
     }
+
+
+
+
 }
