@@ -19,7 +19,6 @@ public class Main {
         Transaction genesis = new Transaction();
         genesis.addOutput(10.0, pub);
         genesis.finalize();
-
         UTXO u = new UTXO(genesis.getHash(), 0);
         pool.addUTXO(u, genesis.getOutput(0));
 
@@ -30,192 +29,172 @@ public class Main {
         // --- Create a transaction that spends the genesis coin ---
         Transaction tx = new Transaction();
         tx.addInput(genesis.getHash(), 0);
-        tx.addOutput(5.0, pub);  // send 5 back to self
-        tx.addOutput(4.0, pub);  // another 5
-
-        // --- Signing ---
+        tx.addOutput(5.0, pub);
+        tx.addOutput(4.0, pub);
         byte[] raw = tx.getRawDataToSign(0);
         byte[] sig = Crypto.sign(priv, raw);
-        tx.addSignature(sig, 0);   // IMPORTANT
-
-        // now finalize
+        tx.addSignature(sig, 0);
         tx.finalize();
 
-
-
-
-        // --- Build a new transaction that spends the output from the previous tx ---
         Transaction tx2 = new Transaction();
-
-        // Spend output 0 of the previous tx
         tx2.addInput(tx.getHash(), 0);
-
-        // Create outputs
         tx2.addOutput(3.0, pub);
-
-        // --- Sign the input ---
         byte[] raw2 = tx2.getRawDataToSign(0);
         byte[] sig2 = Crypto.sign(priv, raw2);
         tx2.addSignature(sig2, 0);
-
-        // Finalize the tx
         tx2.finalize();
 
         Transaction tx3 = new Transaction();
-        // Spend the unspent 5-coin UTXO from tx (index 1)
         tx3.addInput(tx.getHash(), 1);
-        // Create outputs (example: split into 2 + 3)
         tx3.addOutput(2.0, pub);
-        // Sign it
         byte[] raw4 = tx3.getRawDataToSign(0);
         byte[] sig4 = Crypto.sign(priv, raw4);
         tx3.addSignature(sig4, 0);
-        // Finalize
         tx3.finalize();
 
 
         Transaction tx4 = new Transaction();
-
         tx4.addInput(tx2.getHash(), 0);
-
         tx4.addOutput(2.0, pub);
-
         byte[] raw5 = tx4.getRawDataToSign(0);
         byte[] sig5 = Crypto.sign(priv, raw5);
         tx4.addSignature(sig5, 0);   // ✔️ correct
-
         tx4.finalize();
 
         Transaction tx5 = new Transaction();
-
         tx5.addInput(tx4.getHash(), 0);
-
         tx5.addOutput(1.0, pub);
         tx5.addOutput(1.0, pub);
-
         byte[] raw6 = tx5.getRawDataToSign(0);
         byte[] sig6 = Crypto.sign(priv, raw6);
         tx5.addSignature(sig6, 0);   // ✔️ correct
-
         tx5.finalize();
 
         Transaction tx6 = new Transaction();
         tx6.addInput(tx5.getHash(), 0);
         tx6.addOutput(0.5, pub);
-
         byte[] raw7 = tx6.getRawDataToSign(0);
         byte[] sig7 = Crypto.sign(priv, raw7);
         tx6.addSignature(sig7, 0);   // ✔️ correct
         tx6.finalize();
 
+
         Transaction txBait = new Transaction();
         txBait.addInput(genesis.getHash(), 0);
         txBait.addOutput(5.5, pub);
-
         byte[] rawBait = txBait.getRawDataToSign(0);
         txBait.addSignature(Crypto.sign(priv, rawBait), 0);
         txBait.finalize();
 
 
-
-        // --- Run TxHandler on this tx ---
         TxHandler handler = new TxHandler(pool);
-
-
-        //TODO
-        // Mudar isto para não ser hardcoded
-        // Isto é, ver o número de inputs e de outputs de forma dinâmica sem estar só uma string
-        System.out.println("=== PROCESSING TRANSACTION ===");
-        System.out.println("Inputs: 2");
-        System.out.println("Outputs: 2 (5.0, 3.0, 2.0)");
-        System.out.println();
-
         Transaction[] allTxs = {tx, tx2, tx3, tx4, tx5, tx6};
 
-        System.out.println("\n##################################\n##################################\n##################################");
+
+        // ==========================================
+        // --- WARMUP PHASE ---
+        // ==========================================
+        // Run Greedy once without timing to trigger JVM class loading and JIT compilation.
+        // We use a COPY of the pool (new UTXOPool(pool)) so the main pool stays fresh.
+        System.out.print("Warming up JVM... ");
+        new Greedy(new UTXOPool(pool)).selectTransactions(allTxs);
+        System.out.println("Done.");
 
 
-        // --- Greedy selector ---
+
+
+
+        System.out.println("\n##################################" +
+                "\n##################################" +
+                "\n##################################\n\n");
+
+        // ==========================================
+        // --- 1. Greedy Selector Timing ---
+        // ==========================================
         Greedy greedy = new Greedy(pool);
+
+        long startTime = System.nanoTime(); // START TIMER
         Transaction[] greedySelected = greedy.selectTransactions(allTxs);
-        System.out.println("\n--- Greedy selection ---");
+        long endTime = System.nanoTime();   // END TIMER
+        double greedyDuration = (endTime - startTime) / 1_000_000.0; // Convert ns to ms
+
+        System.out.println("--- Greedy Selection ---");
+        System.out.println("Time Taken: " + String.format("%.4f ms", greedyDuration));
         System.out.println("Selected txs: " + greedySelected.length);
+
         UTXOPool working = new UTXOPool(pool);
         double totalFee = 0.0;
         for (Transaction g : greedySelected) {
             double fee = applyAndComputeFee(working, g);
             totalFee += fee;
-            System.out.println(String.format("  %s  (fee=%.4f)", bytesToHex(g.getHash()), fee));
         }
-        System.out.println(String.format("Total fee collected by Greedy: %.4f", totalFee));
+        System.out.println(String.format("Total Fee (Greedy): %.4f", totalFee));
+
 
         Transaction[] accepted = handler.handleTxs(allTxs);
-
-        // Final results
-        System.out.println("\n\n=== RESULTS ===");
-        System.out.println("Accepted transactions: " + accepted.length);
-        UTXOPool finalPool = handler.getUtxoPool();
-        System.out.println("Final UTXO count: " + finalPool.getAllUTXO().size());
 
         System.out.println("\n" +
                 "\n##################################" +
                 "\n##################################" +
-                "\n##################################");
+                "\n##################################\n\n");
+        handler.printPool();
+        System.out.println("\n" +
+                "\n##################################" +
+                "\n##################################" +
+                "\n##################################\n");
 
-        System.out.println("-----------------------------");
-        List<Object> trans =  handler.getPool();
-        System.out.println(trans);
+        // ==========================================
+        // --- 2. Brute Force (Max 2) Timing ---
+        // ==========================================
+        System.out.println("\n--- Brute Force (Max 2 Txs) ---");
 
-
-        System.out.println("-----------------------------");
-        System.out.println("Fee of Tx1: " + handler.getTxFee(tx));
-        System.out.println("-----------------------------");
-        System.out.println("Fee of Tx2: " + handler.getTxFee(tx2));
-        System.out.println("-----------------------------");
-        System.out.println("Fee of Tx3: " + handler.getTxFee(tx3));
-        System.out.println("-----------------------------");
-        System.out.println("Fee of Tx4: " + handler.getTxFee(tx4));
-        System.out.println("-----------------------------");
-        System.out.println("Fee of Tx5: " + handler.getTxFee(tx5));
-        System.out.println("-----------------------------");
-        System.out.println("Fee of Tx6: " + handler.getTxFee(tx6));
-        System.out.println("-----------------------------");
-        System.out.println(handler.getAcceptedTxs());
-        System.out.println("-----------------------------");
-
-
-
-        // CASE FOR 2
-        System.out.println("## Case for Max Two Transactions");
+        startTime = System.nanoTime(); // START TIMER
         float[] bestTwo = Brute.BruteF(pool, allTxs, handler);
-        System.out.println("Best 2 Fees found (Total Max Fee): " + Arrays.toString(bestTwo));
+        endTime = System.nanoTime();   // END TIMER
+        double brute2Duration = (endTime - startTime) / 1_000_000.0;
+
+        System.out.println("Time Taken: " + String.format("%.4f ms", brute2Duration));
         System.out.println("Total Fee: " + (bestTwo[0] + bestTwo[1]));
-        System.out.println("-----------------------------");
 
 
-        // CASE FOR 3
-        System.out.println("## Case for Max Three Transactions");
-        float[] bestThree = Brute.BruteF_Three(handler); // Uses the new method
-        System.out.println("Best 3 Fees found (Total Max Fee): " + Arrays.toString(bestThree));
+        // ==========================================
+        // --- 3. Brute Force (Max 3) Timing ---
+        // ==========================================
+        System.out.println("\n--- Brute Force (Max 3 Txs) ---");
+
+        startTime = System.nanoTime(); // START TIMER
+        float[] bestThree = Brute.BruteF_Three(handler);
+        endTime = System.nanoTime();   // END TIMER
+        double brute3Duration = (endTime - startTime) / 1_000_000.0;
+
+        System.out.println("Time Taken: " + String.format("%.4f ms", brute3Duration));
         System.out.println("Total Fee: " + (bestThree[0] + bestThree[1] + bestThree[2]));
-        System.out.println("-----------------------------");
 
 
-        // CASE FOR MAX ALL (Brute Force Power Set)
-        System.out.println("## Case for Max Subset (Brute Force)");
+        // ==========================================
+        // --- 4. Brute Force (Max Subset/Power Set) Timing ---
+        // ==========================================
+        System.out.println("\n--- Brute Force (Max Subset / Power Set) ---");
+
+        startTime = System.nanoTime(); // START TIMER
         float[] bestSubset = Brute.BruteF_MaxAll(handler);
-        System.out.println("Best Subset Fees found: " + Arrays.toString(bestSubset));
+        endTime = System.nanoTime();   // END TIMER
+        double bruteAllDuration = (endTime - startTime) / 1_000_000.0;
+
+        System.out.println("Time Taken: " + String.format("%.4f ms", bruteAllDuration));
 
         float totalMaxFee = 0.0f;
         for (float f : bestSubset) {
             totalMaxFee += f;
         }
         System.out.println("Total Fee: " + totalMaxFee);
-        System.out.println("-----------------------------");
 
-
-
-
+        System.out.println("\n================ SUMMARY ================");
+        System.out.println(String.format("Greedy Algo : %8.4f ms", greedyDuration));
+        System.out.println(String.format("Brute (2)   : %8.4f ms", brute2Duration));
+        System.out.println(String.format("Brute (3)   : %8.4f ms", brute3Duration));
+        System.out.println(String.format("Brute (All) : %8.4f ms", bruteAllDuration));
+        System.out.println("=========================================");
     }
 
     // Small helper for pretty hex formatting
@@ -239,8 +218,4 @@ public class Main {
         for (int i = 0; i < tx.numOutputs(); i++) working.addUTXO(new UTXO(h, i), tx.getOutput(i));
         return inSum - outSum;
     }
-
-
-
-
 }

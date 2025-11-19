@@ -16,11 +16,3 @@ Brute Force:
 Ver a as tx que têm maior fees
 para isso é preciso somar todas a tomar para conseguir ter a noção de qual tem maior fees
 loop
-
-Greedy:
-
-Greedy escolhe transações para maximizar fees.
-
-- As transações devem estar correctamente assinadas ou serão rejeitadas.
-- Greedy usa uma cópia do `UTXOPool` e não modifica o pool original.
-

@@ -1,11 +1,7 @@
-import java.lang.reflect.Array;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 public class Brute {
-
 
     public static float[] BruteF(UTXOPool pool, Transaction[] allTxs, TxHandler handler) {
         List<Transaction> accepted = handler.getAcceptedTxs();
@@ -28,7 +24,6 @@ public class Brute {
                 }
             }
         }
-
         return Bigtx;
     }
 
@@ -62,10 +57,8 @@ public class Brute {
                 }
             }
         }
-
         return Bigtx;
     }
-
 
     public static float[] BruteF_MaxAll(TxHandler handler) {
         List<Transaction> accepted = handler.getAcceptedTxs();
@@ -74,31 +67,19 @@ public class Brute {
             fees.add((float) handler.getTxFee(tx));
         }
 
-        // 1. Start with a list that holds one empty subset
         List<List<Float>> allSubsets = new ArrayList<>();
         allSubsets.add(new ArrayList<>());
 
-        // 2. Loop through every fee available
         for (float fee : fees) {
-            // Get the current number of subsets we have found so far
             int currentSize = allSubsets.size();
 
-            // For every subset we already have...
             for (int i = 0; i < currentSize; i++) {
                 List<Float> existingSubset = allSubsets.get(i);
-
-                // Create a NEW subset that is a copy of the existing one + the new fee
                 List<Float> newSubset = new ArrayList<>(existingSubset);
                 newSubset.add(fee);
-
-                // Add this new combination to our master list
                 allSubsets.add(newSubset);
             }
         }
-
-        //
-
-        // 3. Find the winner among all generated subsets
         float maxFee = -1.0f;
         List<Float> bestSubset = new ArrayList<>();
 
@@ -112,14 +93,10 @@ public class Brute {
             }
         }
 
-        // 4. Convert the winning list to a float[] array
         float[] result = new float[bestSubset.size()];
         for (int i = 0; i < bestSubset.size(); i++) {
             result[i] = bestSubset.get(i);
         }
-
         return result;
     }
-
-
 }

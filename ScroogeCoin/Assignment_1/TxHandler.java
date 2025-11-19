@@ -55,7 +55,7 @@ public class TxHandler {
      * Repeatedly process transactions until no more can be accepted.
      */
     public Transaction[] handleTxs(Transaction[] possibleTxs) {
-        
+
         Set<Transaction> remaining = new HashSet<>(Arrays.asList(possibleTxs));
         List<Transaction> accepted = new ArrayList<>();
 
@@ -76,8 +76,8 @@ public class TxHandler {
                     applyTx(tx);
                     accepted.add(tx);
                     acceptedTxs.add(tx);
-                    printTx(tx);
-                    printPool();
+                    //printTx(tx);
+                    //printPool();
                     it.remove();
                     progress = true;   // new tx accepted → try again
                 }
@@ -124,11 +124,6 @@ public class TxHandler {
     }
 
 
-    //TODO
-    // ter as tx todas para conseguir calcular a fee entre o input e output
-    // para cada tx temos de ter o input e output para calcular a fee
-    //
-
     public List<Transaction> getAcceptedTxs() {
         return new ArrayList<>(acceptedTxs); // return a copy to avoid external modification
     }
@@ -165,7 +160,8 @@ public class TxHandler {
 
 
     /* Print UTXO pool contents */
-    private void printPool() {
+    /* Mudei para public just to be pretty*/
+    public void printPool() {
         System.out.println("Current UTXO Pool:");
         for (UTXO u : utxoPool.getAllUTXO()) {
             Transaction.Output out = utxoPool.getTxOutput(u);

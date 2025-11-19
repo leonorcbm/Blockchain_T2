@@ -83,6 +83,31 @@ Correr é fácil! Basta correr o ficheiro ```Main.java```.
 
 Para correr os testes basta fazer right click na pasta de ```/test```, e correr todos os testes.
 
-## **O que falta fazer**
-A análise empírica : testes brute force e greedy.
-E eventualmente ajustar o output para ficar mais bonito. Sorry tive que ir vendo as coisas.
+
+
+
+
+## A Classe `Brute.java`
+
+Esta classe auxiliar foi desenvolvida para explorar algoritmos de otimização baseados em Força Bruta (_Brute Force_). O seu objetivo é analisar o conjunto de transações aceites e identificar quais as combinações que maximizam o lucro total das taxas (_fees_), ignorando a eficiência temporal em prol da garantia matemática do melhor resultado possível.
+A classe implementa três estratégias distintas:
+
+- ```BruteF(UTXOPool pool, Transaction[] allTxs, TxHandler handler)``` - Este método procura o par de transações (2) que oferece a maior soma de taxas.
+  
+   Utiliza dois ciclos embebidos (nested loops) para verificar todas as combinações únicas de dois elementos ($O(N^2)$).
+  
+   Retorna um array com os valores das duas maiores taxas encontradas.
+
+- ```BruteF_Three(TxHandler handler)``` - Uma extensão da lógica anterior, desenhada para encontrar o trio de transações (3) com o maior retorno.
+
+  Implementa três ciclos embebidos para testar todas as combinações possíveis de três transações ($O(N^3)$).
+  
+  Retorna as três taxas que compõem a melhor combinação encontrada.
+
+- ```BruteF_MaxAll(TxHandler handler)``` - O método mais complexo e robusto da classe. O seu objetivo é encontrar o subconjunto ideal (de qualquer tamanho) que maximiza a taxa total entre todas as transações aceites.
+
+  Como o número de transações pode variar, este método gera o Conjunto das Partes (_Power Set_) — ou seja, todas as combinações possíveis de transações ($2^N$).
+  Utiliza uma abordagem iterativa (_Cascading_) em vez de recursiva ou binária: começa com uma lista vazia e, para cada nova taxa, duplica a lista de subconjuntos existentes, adicionando a nova taxa a cada cópia.
+
+  Embora garanta o resultado máximo absoluto, a sua complexidade é exponencial ($O(2^N)$), sendo viável apenas para conjuntos de dados pequenos.
+
