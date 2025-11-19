@@ -1,44 +1,44 @@
 # **Blockchain Trabalho 2**
 
-O objetivo principal deste trabalho, é implementar a lógica Scrooge, para processar e validar transações e desenvolver uma *public ledger*. O programa deve responder a essas necessidades, e passar a testes, que já vinham com a pasta do trabalho.
+O objetivo principal deste trabalho, é implementar a lógica Scrooge, para processar e validar transações e desenvolver uma _public ledger_. O programa deve responder a essas necessidades, e passar a testes, que já vinham com a pasta do trabalho.
 
-As classes implementadas, foram a ```TxHandler.java```, a ```Crypto.java```, a ```Main.java```, a ```Brute.java``` e a ```Greedy.java```.
+As classes implementadas, foram a `TxHandler.java`, a `Crypto.java`, a `Main.java`, a `Brute.java` e a `Greedy.java`.
 
-## **A classe ```TxHandler.java```**
+## **A classe `TxHandler.java`**
 
 Esta é a classe central do projeto! Cá encontra-se a lógica Scrooge, com osseguintes métodos:
 
-- **TxHandler(UTXOPool utxoPool)** - Constructor - Inicializa o handler, criando uma cópia defensiva da ```UTXOPool``` inicial. Esta cópia representa o estado atual de outputs não consumidos (gastos).
+- **TxHandler(UTXOPool utxoPool)** - Constructor - Inicializa o handler, criando uma cópia defensiva da `UTXOPool` inicial. Esta cópia representa o estado atual de outputs não consumidos (gastos).
 - **isValidTx(Transaction tx)** - Este método realiza todas as validações necessárias para avançar com qualquer transação:
-    - Verifica se os inputs reivindicados - _UTXOs_ - estão presentes no atual ```utxoPool```.
-    - Verifica se a assinatura digital em cada _UTXO_, utilizando um método da classe ```Crypto.java```, o ```Crypto.verifySignature```, para verificar que o utilizador está autoriizado a gastar.
-    - Utiliza um set (```HashSet```) de _UTXOs_ reivindicadas, para que se verificque que estas não são reutilizadas na mesma transação.
-    - Verifica se a soma dos valores de entrada são maiores do que os valores de saída, para prevenir inflação.
-    - E por fim, verifica se os valores de saída não são negativos.
-- **handleTxs(Transaction[] possibleTxs)** - Processa uma lista de transações propostas ao longo de um período, e devolve uma matriz mutamente válida de transações aceites de tamanho máximo. Itera, repetitivamente sobre as transações restantes, aceitando as que são válidas e utiliza o método ```applyTx()``` para atualizar imediatamente o pool. Isto considera as transações que fazem referência a saídas de outras transações dentro do mesmo bloco.
--  **applyTx** - Mencionado acima, este método atualiza imediatamente a `UTXOPool`, removendo as _UTXOs_ que foram gastas pela transação aceite, e adicionando as novas _UTXOs_, criadas pela transação.
+  - Verifica se os inputs reivindicados - _UTXOs_ - estão presentes no atual `utxoPool`.
+  - Verifica se a assinatura digital em cada _UTXO_, utilizando um método da classe `Crypto.java`, o `Crypto.verifySignature`, para verificar que o utilizador está autoriizado a gastar.
+  - Utiliza um set (`HashSet`) de _UTXOs_ reivindicadas, para que se verificque que estas não são reutilizadas na mesma transação.
+  - Verifica se a soma dos valores de entrada são maiores do que os valores de saída, para prevenir inflação.
+  - E por fim, verifica se os valores de saída não são negativos.
+- **handleTxs(Transaction[] possibleTxs)** - Processa uma lista de transações propostas ao longo de um período, e devolve uma matriz mutamente válida de transações aceites de tamanho máximo. Itera, repetitivamente sobre as transações restantes, aceitando as que são válidas e utiliza o método `applyTx()` para atualizar imediatamente o pool. Isto considera as transações que fazem referência a saídas de outras transações dentro do mesmo bloco.
+- **applyTx** - Mencionado acima, este método atualiza imediatamente a `UTXOPool`, removendo as _UTXOs_ que foram gastas pela transação aceite, e adicionando as novas _UTXOs_, criadas pela transação.
 
 - Por fim, foram incluídos métodos de leitura para que, durante o desenvolvimento, tivessemos facilidade a ver as transações e o `UTXOPool` claramente.
 
-## **A classe ```Crypto.java```**
+## **A classe `Crypto.java`**
 
 Esta classe já vinha implementada com o código inicial do trabalho, no entanto adicionou-se um método de assinatura necessário para a lógica da classe anterior.
 
-- **verifySignature(PublicKey pubKey, byte[] message, byte[] signature)**: Esta é a função essencial que é utilizada no método anterior ```ìsValidTx```; é com este método que se verifica as assinaturas digitais, que para efeitos de teste são geradas pela função ```sign(PrivateKey privateKey, byte[] message)```
+- **verifySignature(PublicKey pubKey, byte[] message, byte[] signature)**: Esta é a função essencial que é utilizada no método anterior `ìsValidTx`; é com este método que se verifica as assinaturas digitais, que para efeitos de teste são geradas pela função `sign(PrivateKey privateKey, byte[] message)`
 
-## **A classe ```Main.java```**
+## **A classe `Main.java`**
+
 Aqui é mostrado como se utilizam as classes do projeto, descrevemos o processo de uma transação a utilizar a Scrooge! Neste ficheiro:
+
 - São geradas chaves RSA para simular um utilizador.
-- É gerada uma transação *unspent* no valor de 10 coins.
+- É gerada uma transação _unspent_ no valor de 10 coins.
 - Inicializasse `UTXOPool`, adicionando-lhe os valores da transição criada anteriormente.
 - Criasse a transação, que pretende consumir o nosso input de 10 _coins_, e gerar 2 outputs com 5 _coins_ e 4 _coins_.
 - Assinam-se os dados da transação de entrada com a chave privada gerada no inicio.
-- Processa-se a transação, através da chamada de ```handler.handleTx()```com a nova transação.
+- Processa-se a transação, através da chamada de `handler.handleTx()`com a nova transação.
 - E por fim, imprime-se as transações aceites e o estado final da `UTXOPool`.
 
-
 Na secção seguinte mostro o output do programa!
-
 
 ## **Output**
 
@@ -92,50 +92,86 @@ Brute (All) :   0.1617 ms
 =========================================
 ```
 
-
 ## Execução e Testes do Projeto
 
 O projeto foi configurado para ser executado num ambiente Java padrão, sendo compatível com _IDEs_ modernos como o _IntelliJ IDEA_ ou _Eclipse_. A estrutura do projeto inclui o código-fonte principal e uma suite de testes unitários abrangente.
 
 1. **Executar a Simulação Principal**
 
-    O ponto de entrada da aplicação encontra-se na classe `Main.java`. Este ficheiro contém uma simulação completa do ciclo de vida de transações na ScroogeCoin, desde a criação do bloco Genesis até à seleção de transações via algoritmos Greedy e Brute Force.
+   O ponto de entrada da aplicação encontra-se na classe `Main.java`. Este ficheiro contém uma simulação completa do ciclo de vida de transações na ScroogeCoin, desde a criação do bloco Genesis até à seleção de transações via algoritmos Greedy e Brute Force.
 
 **Para executar o programa:**
-  - Navegue até ao ficheiro `Main.java` na árvore do projeto.
-  - Execute o método `main()` (normalmente através de _Right-Click_ > Run `Main.java`).
-  - O resultado será exibido na consola, detalhando passo-a-passo o processamento das transações, as assinaturas digitais e a comparação de performance entre os algoritmos.
+
+- Navegue até ao ficheiro `Main.java` na árvore do projeto.
+- Execute o método `main()` (normalmente através de _Right-Click_ > Run `Main.java`).
+- O resultado será exibido na consola, detalhando passo-a-passo o processamento das transações, as assinaturas digitais e a comparação de performance entre os algoritmos.
 
 2. **Executar os Testes Unitários**
 
-    Para garantir a robustez e a correção da lógica implementada (especialmente as validações criptográficas e a prevenção de _double-spending_), foram incluídos testes unitários na pasta `/test`.
+   Para garantir a robustez e a correção da lógica implementada (especialmente as validações criptográficas e a prevenção de _double-spending_), foram incluídos testes unitários na pasta `/test`.
 
 **Para correr os testes:**
-  - Localize a diretoria `/test` na estrutura do projeto.
-  - Execute todos os testes contidos na pasta (através de _Right-Click_ na pasta > Run 'All Tests').
-  - O _IDE_ apresentará um relatório com o estado de cada teste (_Pass/Fail_), cobrindo cenários como assinaturas inválidas, transações mal formadas e conflitos de `UTXO`.
+
+- Localize a diretoria `/test` na estrutura do projeto.
+- Execute todos os testes contidos na pasta (através de _Right-Click_ na pasta > Run 'All Tests').
+- O _IDE_ apresentará um relatório com o estado de cada teste (_Pass/Fail_), cobrindo cenários como assinaturas inválidas, transações mal formadas e conflitos de `UTXO`.
 
 ## **A Classe `Brute.java`**
 
 Esta classe auxiliar foi desenvolvida para explorar algoritmos de otimização baseados em Força Bruta (_Brute Force_). O seu objetivo é analisar o conjunto de transações aceites e identificar quais as combinações que maximizam o lucro total das taxas (_fees_), ignorando a eficiência temporal em prol da garantia matemática do melhor resultado possível.
 A classe implementa três estratégias distintas:
 
-- ```BruteF(UTXOPool pool, Transaction[] allTxs, TxHandler handler)``` - Este método procura o par de transações (2) que oferece a maior soma de taxas.
-  
-   Utiliza dois ciclos embutidos (_nested loops_) para verificar todas as combinações únicas de dois elementos ($O(N^2)$).
-  
-   Retorna um array com os valores das duas maiores taxas encontradas.
+- `BruteF(UTXOPool pool, Transaction[] allTxs, TxHandler handler)` - Este método procura o par de transações (2) que oferece a maior soma de taxas.
 
-- ```BruteF_Three(TxHandler handler)``` - Uma extensão da lógica anterior, desenhada para encontrar o trio de transações (3) com o maior retorno.
+  Utiliza dois ciclos embutidos (_nested loops_) para verificar todas as combinações únicas de dois elementos ($O(N^2)$).
+
+  Retorna um array com os valores das duas maiores taxas encontradas.
+
+- `BruteF_Three(TxHandler handler)` - Uma extensão da lógica anterior, desenhada para encontrar o trio de transações (3) com o maior retorno.
 
   Implementa três ciclos embutidos para testar todas as combinações possíveis de três transações ($O(N^3)$).
-  
+
   Retorna as três taxas que compõem a melhor combinação encontrada.
 
-- ```BruteF_MaxAll(TxHandler handler)``` - O método mais complexo e robusto da classe. O seu objetivo é encontrar o subconjunto ideal (de qualquer tamanho) que maximiza a taxa total entre todas as transações aceites.
+- `BruteF_MaxAll(TxHandler handler)` - O método mais complexo e robusto da classe. O seu objetivo é encontrar o subconjunto ideal (de qualquer tamanho) que maximiza a taxa total entre todas as transações aceites.
 
   Como o número de transações pode variar, este método gera o Conjunto das Partes (_Power Set_) — ou seja, todas as combinações possíveis de transações ($2^N$).
   Utiliza uma abordagem iterativa (_Cascading_) em vez de recursiva ou binária: começa com uma lista vazia e, para cada nova taxa, duplica a lista de subconjuntos existentes, adicionando a nova taxa a cada cópia.
 
   Embora garanta o resultado máximo absoluto, a sua complexidade é exponencial ($O(2^N)$), sendo viável apenas para conjuntos de dados pequenos.
 
+## Classe `Greedy.java`
+
+O objetivo desta classe é selecionar, de forma gulosa, o conjunto de transações que maximiza o total de fees recebidos, partindo de um conjunto de transações candidatas.
+
+### Lógica do algoritmo
+
+1. Mantém-se uma cópia defensiva do `UTXOPool` inicial.
+2. Enquanto existirem transações válidas:
+   - Calcula-se o fee de cada transação válida em relação ao estado atual do `UTXOPool`.
+   - Seleciona-se apenas a transação com maior fee.
+   - Aplica-se imediatamente essa transação ao pool.
+   - Remove-se essa transação da lista de candidatas.
+3. O processo termina quando já não existem transações válidas para serem aplicadas.
+
+### Funcionamento interno
+
+A classe possui os seguintes métodos:
+
+- _`selectTransactions()`_  
+  O método principal. Implementa o ciclo greedy acima descrito e devolve o conjunto final de transações aceites.
+
+- _`computeFeeUsingPool()`_  
+  Calcula o _fee_ individual de uma transação, utilizando exclusivamente os UTXOs disponíveis no estado atual do pool.
+
+- _`isValidTxAgainstPool()`_  
+  Verifica a validade da transação contra o pool corrente, de forma semelhante ao `isValidTx` do `TxHandler`, mas sem alterar o estado.
+
+- _`applyTxToPool()`_
+  Atualiza o `UTXOPool` de trabalho sempre que uma transação é escolhida.
+
+### Características importantes
+
+- O algoritmo não olha para dependências futuras, nem tenta prever combinações melhores; analisa apenas fees locais.
+- Em certos cenários de conflito entre transações, o greedy pode escolher uma transação de fee elevado, mas que impede uma cadeia inteira de transações com fee total superior.
+- Por este motivo, nos testes, observa-se frequentemente que o greedy obtém um total de fees inferior ao brute force, que procura o conjunto globalmente ótimo.
