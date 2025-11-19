@@ -149,7 +149,7 @@ public class Main {
         System.out.println("\n--- Brute Force (Max 2 Txs) ---");
 
         startTime = System.nanoTime(); // START TIMER
-        float[] bestTwo = Brute.BruteF(pool, allTxs, handler);
+        float[] bestTwo = Brute.BruteF(handler);
         endTime = System.nanoTime();   // END TIMER
         double brute2Duration = (endTime - startTime) / 1_000_000.0;
 

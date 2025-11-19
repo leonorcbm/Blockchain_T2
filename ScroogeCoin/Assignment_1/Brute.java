@@ -3,7 +3,7 @@ import java.util.List;
 
 public class Brute {
 
-    public static float[] BruteF(UTXOPool pool, Transaction[] allTxs, TxHandler handler) {
+    public static float[] BruteF(TxHandler handler) {
         List<Transaction> accepted = handler.getAcceptedTxs();
         float[] Bigtx = new float[2];
         float F = 0.0f;
