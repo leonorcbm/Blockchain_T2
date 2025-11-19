@@ -3,12 +3,14 @@ import java.util.List;
 
 public class Brute {
 
+    // ====================================
+    // --- 1. Brute Force for best Pair ---
+    // ====================================
     public static float[] BruteF(TxHandler handler) {
         List<Transaction> accepted = handler.getAcceptedTxs();
         float[] Bigtx = new float[2];
         float F = 0.0f;
 
-        // Store fees in a List
         List<Float> fees = new ArrayList<>();
         for (Transaction tx : accepted) {
             fees.add((float) handler.getTxFee(tx));
@@ -27,6 +29,9 @@ public class Brute {
         return Bigtx;
     }
 
+    // ====================================
+    // --- 2. Brute Force for 3 best tx ---
+    // ====================================
     public static float[] BruteF_Three(TxHandler handler) {
         List<Transaction> accepted = handler.getAcceptedTxs();
         List<Float> fees = new ArrayList<>();
@@ -41,7 +46,6 @@ public class Brute {
         float F = 0.0f;
         float[] Bigtx = new float[3];
 
-        // Triple nested loops for unique triplets (i, j, k)
         for (int i = 0; i < fees.size(); i++) {
             for (int j = i + 1; j < fees.size(); j++) {
                 for (int k = j + 1; k < fees.size(); k++) {
@@ -60,6 +64,9 @@ public class Brute {
         return Bigtx;
     }
 
+    // ==================================================
+    // --- 0. Brute Force for best tx subset possible ---
+    // ==================================================
     public static float[] BruteF_MaxAll(TxHandler handler) {
         List<Transaction> accepted = handler.getAcceptedTxs();
         List<Float> fees = new ArrayList<>();

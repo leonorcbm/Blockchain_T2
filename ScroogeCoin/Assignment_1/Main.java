@@ -6,14 +6,18 @@ public class Main {
 
     public static void main(String[] args) throws Exception {
 
-        // --- Generate RSA key pairs ---
+        // ================================================
+        // --- 0. Generate RSA Key Pair ---
+        // ================================================
         KeyPairGenerator keyGen = KeyPairGenerator.getInstance("RSA");
         keyGen.initialize(1024);
         KeyPair pair = keyGen.generateKeyPair();
         PublicKey pub = pair.getPublic();
         PrivateKey priv = pair.getPrivate();
 
-        // --- Create UTXO pool and add an initial coin ---
+        // ================================================
+        // --- 1. Create UTXO pool and add initial coin ---
+        // ================================================
         UTXOPool pool = new UTXOPool();
 
         Transaction genesis = new Transaction();
@@ -26,7 +30,10 @@ public class Main {
         System.out.println("UTXO -> value: 10.0, owner: " + pub.toString());
         System.out.println();
 
-        // --- Create a transaction that spends the genesis coin ---
+        // ================================================
+        // --- 2. Tx that spends the first UTXO created ---
+        // ================================================
+
         Transaction tx = new Transaction();
         tx.addInput(genesis.getHash(), 0);
         tx.addOutput(5.0, pub);
@@ -52,13 +59,12 @@ public class Main {
         tx3.addSignature(sig4, 0);
         tx3.finalize();
 
-
         Transaction tx4 = new Transaction();
         tx4.addInput(tx2.getHash(), 0);
         tx4.addOutput(2.0, pub);
         byte[] raw5 = tx4.getRawDataToSign(0);
         byte[] sig5 = Crypto.sign(priv, raw5);
-        tx4.addSignature(sig5, 0);   // ✔️ correct
+        tx4.addSignature(sig5, 0);
         tx4.finalize();
 
         Transaction tx5 = new Transaction();
@@ -67,7 +73,7 @@ public class Main {
         tx5.addOutput(1.0, pub);
         byte[] raw6 = tx5.getRawDataToSign(0);
         byte[] sig6 = Crypto.sign(priv, raw6);
-        tx5.addSignature(sig6, 0);   // ✔️ correct
+        tx5.addSignature(sig6, 0);
         tx5.finalize();
 
         Transaction tx6 = new Transaction();
@@ -75,9 +81,8 @@ public class Main {
         tx6.addOutput(0.5, pub);
         byte[] raw7 = tx6.getRawDataToSign(0);
         byte[] sig7 = Crypto.sign(priv, raw7);
-        tx6.addSignature(sig7, 0);   // ✔️ correct
+        tx6.addSignature(sig7, 0);
         tx6.finalize();
-
 
         Transaction txBait = new Transaction();
         txBait.addInput(genesis.getHash(), 0);
@@ -86,37 +91,22 @@ public class Main {
         txBait.addSignature(Crypto.sign(priv, rawBait), 0);
         txBait.finalize();
 
-
         TxHandler handler = new TxHandler(pool);
         Transaction[] allTxs = {tx, tx2, tx3, tx4, tx5, tx6};
-
-
-        // ==========================================
-        // --- WARMUP PHASE ---
-        // ==========================================
-        // Run Greedy once without timing to trigger JVM class loading and JIT compilation.
-        // We use a COPY of the pool (new UTXOPool(pool)) so the main pool stays fresh.
-        System.out.print("Warming up JVM... ");
-        new Greedy(new UTXOPool(pool)).selectTransactions(allTxs);
-        System.out.println("Done.");
-
-
-
-
 
         System.out.println("\n##################################" +
                 "\n##################################" +
                 "\n##################################\n\n");
 
         // ==========================================
-        // --- 1. Greedy Selector Timing ---
+        // --- 3. Greedy Selector Timing ---
         // ==========================================
         Greedy greedy = new Greedy(pool);
 
         long startTime = System.nanoTime(); // START TIMER
         Transaction[] greedySelected = greedy.selectTransactions(allTxs);
         long endTime = System.nanoTime();   // END TIMER
-        double greedyDuration = (endTime - startTime) / 1_000_000.0; // Convert ns to ms
+        double greedyDuration = (endTime - startTime) / 1_000_000.0; // ns to ms
 
         System.out.println("--- Greedy Selection ---");
         System.out.println("Time Taken: " + String.format("%.4f ms", greedyDuration));
@@ -130,21 +120,22 @@ public class Main {
         }
         System.out.println(String.format("Total Fee (Greedy): %.4f", totalFee));
 
-
-        Transaction[] accepted = handler.handleTxs(allTxs);
+        handler.handleTxs(allTxs);
 
         System.out.println("\n" +
                 "\n##################################" +
                 "\n##################################" +
                 "\n##################################\n\n");
+
         handler.printPool();
+
         System.out.println("\n" +
                 "\n##################################" +
                 "\n##################################" +
                 "\n##################################\n");
 
         // ==========================================
-        // --- 2. Brute Force (Max 2) Timing ---
+        // --- 4. Brute Force (Max 2) Timing ---
         // ==========================================
         System.out.println("\n--- Brute Force (Max 2 Txs) ---");
 
@@ -156,9 +147,8 @@ public class Main {
         System.out.println("Time Taken: " + String.format("%.4f ms", brute2Duration));
         System.out.println("Total Fee: " + (bestTwo[0] + bestTwo[1]));
 
-
         // ==========================================
-        // --- 3. Brute Force (Max 3) Timing ---
+        // --- 5. Brute Force (Max 3) Timing ---
         // ==========================================
         System.out.println("\n--- Brute Force (Max 3 Txs) ---");
 
@@ -170,9 +160,8 @@ public class Main {
         System.out.println("Time Taken: " + String.format("%.4f ms", brute3Duration));
         System.out.println("Total Fee: " + (bestThree[0] + bestThree[1] + bestThree[2]));
 
-
         // ==========================================
-        // --- 4. Brute Force (Max Subset/Power Set) Timing ---
+        // --- 6. Brute Force (Max Subset/Power Set) Timing ---
         // ==========================================
         System.out.println("\n--- Brute Force (Max Subset / Power Set) ---");
 
@@ -197,13 +186,9 @@ public class Main {
         System.out.println("=========================================");
     }
 
-    // Small helper for pretty hex formatting
-    private static String bytesToHex(byte[] bytes) {
-        StringBuilder sb = new StringBuilder();
-        for (byte b : bytes) sb.append(String.format("%02x", b));
-        return sb.toString();
-    }
-    // Apply tx to working pool and return its fee
+    // =============================================================================
+    // --- 1a. Helper for greedy that applies tx to working pool and returns fee ---
+    // =============================================================================
     private static double applyAndComputeFee(UTXOPool working, Transaction tx) {
         double inSum = 0, outSum = 0;
         for (int i = 0; i < tx.numInputs(); i++) {

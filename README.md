@@ -1,8 +1,8 @@
 # **Blockchain Trabalho 2**
 
-O objetivo principal detste trabalho, é implementar a lógica Scrooge, para processar e validar transações e desenvolver uma *public ledger*. O programa deve responder a essas necessidades, e passar a testes, que já vinham com a pasta do trabalho.
+O objetivo principal deste trabalho, é implementar a lógica Scrooge, para processar e validar transações e desenvolver uma *public ledger*. O programa deve responder a essas necessidades, e passar a testes, que já vinham com a pasta do trabalho.
 
-As classes implementadas, foram a ```TxHandler.java```, a ```Crypto.java``` e a ```Main.java```.
+As classes implementadas, foram a ```TxHandler.java```, a ```Crypto.java```, a ```Main.java```, a ```Brute.java``` e a ```Greedy.java```.
 
 ## **A classe ```TxHandler.java```**
 
@@ -10,15 +10,15 @@ Esta é a classe central do projeto! Cá encontra-se a lógica Scrooge, com osse
 
 - **TxHandler(UTXOPool utxoPool)** - Constructor - Inicializa o handler, criando uma cópia defensiva da ```UTXOPool``` inicial. Esta cópia representa o estado atual de outputs não consumidos (gastos).
 - **isValidTx(Transaction tx)** - Este método realiza todas as validações necessárias para avançar com qualquer transação:
-    - Verifica se os inputs reivindicados - UTXOs - estão presentes no atual ```utxoPool```.
-    - Verifica se a assinatura digital em cada UTXO, utilizando um método da classe ```Crypto.java```, o ```Crypto.verifySignature```, para verificar que o utilizador está autoriizado a gastar.
-    - Utiliza um set (```HashSet```) de UTXOs reivindicadas, para que se verificque que estas não são reutilizadas na mesma transação.
+    - Verifica se os inputs reivindicados - _UTXOs_ - estão presentes no atual ```utxoPool```.
+    - Verifica se a assinatura digital em cada _UTXO_, utilizando um método da classe ```Crypto.java```, o ```Crypto.verifySignature```, para verificar que o utilizador está autoriizado a gastar.
+    - Utiliza um set (```HashSet```) de _UTXOs_ reivindicadas, para que se verificque que estas não são reutilizadas na mesma transação.
     - Verifica se a soma dos valores de entrada são maiores do que os valores de saída, para prevenir inflação.
     - E por fim, verifica se os valores de saída não são negativos.
-- **handleTxs(Transaction[] possibleTxs)** - Processa uma lista de transações propostas ao longo de um período, e devolve uma matriz mutamente válida de transações aceites de tamanho máximo. Itera, repetitivamente sobre as transações restantes, aceitando as que são válidas e utiliza o método ```applyTx``` para atualizar imediatamente o pool. Isto considera as transações que fazem referência a saídas de outras transações dentro do mesmo bloco.
--  **applyTx** - Mencionado acima, este método atualiza imediatamente a UTXOPool, removendo as UTXOs que foram gastas pela transação aceite, e adicionando as novas UTXOs, criadas pela transação.
+- **handleTxs(Transaction[] possibleTxs)** - Processa uma lista de transações propostas ao longo de um período, e devolve uma matriz mutamente válida de transações aceites de tamanho máximo. Itera, repetitivamente sobre as transações restantes, aceitando as que são válidas e utiliza o método ```applyTx()``` para atualizar imediatamente o pool. Isto considera as transações que fazem referência a saídas de outras transações dentro do mesmo bloco.
+-  **applyTx** - Mencionado acima, este método atualiza imediatamente a `UTXOPool`, removendo as _UTXOs_ que foram gastas pela transação aceite, e adicionando as novas _UTXOs_, criadas pela transação.
 
-- Por fim, foram incluídos métodos de leitura para que, durante o desenvolvimento, tivessemos facilidade a ver as transações e o UTXOPool claramente.
+- Por fim, foram incluídos métodos de leitura para que, durante o desenvolvimento, tivessemos facilidade a ver as transações e o `UTXOPool` claramente.
 
 ## **A classe ```Crypto.java```**
 
@@ -30,11 +30,11 @@ Esta classe já vinha implementada com o código inicial do trabalho, no entanto
 Aqui é mostrado como se utilizam as classes do projeto, descrevemos o processo de uma transação a utilizar a Scrooge! Neste ficheiro:
 - São geradas chaves RSA para simular um utilizador.
 - É gerada uma transação *unspent* no valor de 10 coins.
-- Inicializasse **UTXOPool**, adicionando-lhe os valores da transição criada anteriormente.
-- Criasse a transação, que pretende consumir o nosso input de 10 coins, e gerar 2 outputs com 5 coins.
+- Inicializasse `UTXOPool`, adicionando-lhe os valores da transição criada anteriormente.
+- Criasse a transação, que pretende consumir o nosso input de 10 _coins_, e gerar 2 outputs com 5 _coins_ e 4 _coins_.
 - Assinam-se os dados da transação de entrada com a chave privada gerada no inicio.
 - Processa-se a transação, através da chamada de ```handler.handleTx()```com a nova transação.
-- E por fim, imprime-se as transações aceites e o estado final da **UTXOPool**.
+- E por fim, imprime-se as transações aceites e o estado final da `UTXOPool`.
 
 
 Na secção seguinte mostro o output do programa!
@@ -46,61 +46,89 @@ Na secção seguinte mostro o output do programa!
 === GENESIS CREATED ===
 UTXO -> value: 10.0, owner: Sun RSA public key, 1024 bits
   params: null
-  modulus: 96936567253961636360015319696588896557431047711844175315307494385662010021508058118149769165844233616850864598325185573238523239546680447676801517350244823897382627980603250338979499865181919829988028515410842641699175672320978275317963603985075755066946715271612967199804985857320274788188474786461497392963
+  modulus: 146155733295685206170746277245177605216220746221764660753254257558744401828118958126033261379352806863310202232311924284129452323318903940202114837531905813224895465494118125351901182107427784248946076235659014468368595024806735944777178058132267597188393902923199288768924537369990784471730842050300024121999
   public exponent: 65537
 
-=== PROCESSING TRANSACTION ===
-Inputs: 1
-Outputs: 2 (5.0, 5.0)
 
--------------------------------------------------
-Transaction ad2d45516e60cc049f2ea6676f6f90faad4d7dcdd0732c444818fc461e4fa67d
-Inputs:
-  - prevTx: 5ef648b51e18496b7f5309089c5c29484df687ac07a846a253fa9f0e32adcdeb | outputIndex: 0
-Outputs:
-  - value: 5.0 | address: Sun RSA public key, 1024 bits
-  params: null
-  modulus: 96936567253961636360015319696588896557431047711844175315307494385662010021508058118149769165844233616850864598325185573238523239546680447676801517350244823897382627980603250338979499865181919829988028515410842641699175672320978275317963603985075755066946715271612967199804985857320274788188474786461497392963
-  public exponent: 65537
-  - value: 5.0 | address: Sun RSA public key, 1024 bits
-  params: null
-  modulus: 96936567253961636360015319696588896557431047711844175315307494385662010021508058118149769165844233616850864598325185573238523239546680447676801517350244823897382627980603250338979499865181919829988028515410842641699175672320978275317963603985075755066946715271612967199804985857320274788188474786461497392963
-  public exponent: 65537
+##################################
+##################################
+##################################
+
+--- Greedy Selection ---
+Time Taken: 3.0842 ms
+Selected txs: 6
+Total Fee (Greedy): 6.5000
+
+##################################
+##################################
+##################################
+
 Current UTXO Pool:
-  UTXO: ad2d45516e60cc049f2ea6676f6f90faad4d7dcdd0732c444818fc461e4fa67d | idx: 1 | value: 5.0
-  UTXO: ad2d45516e60cc049f2ea6676f6f90faad4d7dcdd0732c444818fc461e4fa67d | idx: 0 | value: 5.0
-=== RESULTS ===
-Accepted transactions: 1
-Final UTXO pool entries:
- - Hash=5ef648b51e18496b7f5309089c5c29484df687ac07a846a253fa9f0e32adcdeb Index=0 Value=10.0
+  UTXO: 9c755452ecc08b6ad891dc7fe4312d1bdd8a73277ba98987c8ffcc2ab88abbaf | idx: 1 | value: 1.0
+  UTXO: e64b41967ed9db97196b1ddd00b6cdb9e74b2c7a3d767d153066d5f336f6960e | idx: 0 | value: 2.0
+  UTXO: b81c29d1f32b69403f683e1872b8d81988963536a14bfd0a4473d718eaf88300 | idx: 0 | value: 0.5
 
+##################################
+##################################
+##################################
+
+--- Brute Force (Max 2 Txs) ---
+Time Taken: 0.5085 ms
+Total Fee: 4.0
+
+--- Brute Force (Max 3 Txs) ---
+Time Taken: 0.0627 ms
+Total Fee: 5.0
+
+--- Brute Force (Max Subset / Power Set) ---
+Time Taken: 0.1617 ms
+Total Fee: 6.5
+
+================ SUMMARY ================
+Greedy Algo :   3.0842 ms
+Brute (2)   :   0.5085 ms
+Brute (3)   :   0.0627 ms
+Brute (All) :   0.1617 ms
+=========================================
 ```
 
-## **Correr o projeto e os testes**
-Not sure se este é um passo que o intellij n faz sozinho mas right click no ficheiro ```pom.xml```, e clicar na ultima opção que fala em Maven e ta.
 
-Correr é fácil! Basta correr o ficheiro ```Main.java```.
+## Execução e Testes do Projeto
 
-Para correr os testes basta fazer right click na pasta de ```/test```, e correr todos os testes.
+O projeto foi configurado para ser executado num ambiente Java padrão, sendo compatível com _IDEs_ modernos como o _IntelliJ IDEA_ ou _Eclipse_. A estrutura do projeto inclui o código-fonte principal e uma suite de testes unitários abrangente.
 
+1. **Executar a Simulação Principal**
 
+    O ponto de entrada da aplicação encontra-se na classe `Main.java`. Este ficheiro contém uma simulação completa do ciclo de vida de transações na ScroogeCoin, desde a criação do bloco Genesis até à seleção de transações via algoritmos Greedy e Brute Force.
 
+**Para executar o programa:**
+  - Navegue até ao ficheiro `Main.java` na árvore do projeto.
+  - Execute o método `main()` (normalmente através de _Right-Click_ > Run `Main.java`).
+  - O resultado será exibido na consola, detalhando passo-a-passo o processamento das transações, as assinaturas digitais e a comparação de performance entre os algoritmos.
 
+2. **Executar os Testes Unitários**
 
-## A Classe `Brute.java`
+    Para garantir a robustez e a correção da lógica implementada (especialmente as validações criptográficas e a prevenção de _double-spending_), foram incluídos testes unitários na pasta `/test`.
+
+**Para correr os testes:**
+  - Localize a diretoria `/test` na estrutura do projeto.
+  - Execute todos os testes contidos na pasta (através de _Right-Click_ na pasta > Run 'All Tests').
+  - O _IDE_ apresentará um relatório com o estado de cada teste (_Pass/Fail_), cobrindo cenários como assinaturas inválidas, transações mal formadas e conflitos de `UTXO`.
+
+## **A Classe `Brute.java`**
 
 Esta classe auxiliar foi desenvolvida para explorar algoritmos de otimização baseados em Força Bruta (_Brute Force_). O seu objetivo é analisar o conjunto de transações aceites e identificar quais as combinações que maximizam o lucro total das taxas (_fees_), ignorando a eficiência temporal em prol da garantia matemática do melhor resultado possível.
 A classe implementa três estratégias distintas:
 
 - ```BruteF(UTXOPool pool, Transaction[] allTxs, TxHandler handler)``` - Este método procura o par de transações (2) que oferece a maior soma de taxas.
   
-   Utiliza dois ciclos embebidos (nested loops) para verificar todas as combinações únicas de dois elementos ($O(N^2)$).
+   Utiliza dois ciclos embutidos (_nested loops_) para verificar todas as combinações únicas de dois elementos ($O(N^2)$).
   
    Retorna um array com os valores das duas maiores taxas encontradas.
 
 - ```BruteF_Three(TxHandler handler)``` - Uma extensão da lógica anterior, desenhada para encontrar o trio de transações (3) com o maior retorno.
 
-  Implementa três ciclos embebidos para testar todas as combinações possíveis de três transações ($O(N^3)$).
+  Implementa três ciclos embutidos para testar todas as combinações possíveis de três transações ($O(N^3)$).
   
   Retorna as três taxas que compõem a melhor combinação encontrada.
 
